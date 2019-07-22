@@ -7,7 +7,7 @@ RANDOM = TRUE
 LagPlay = TRUE
 seed = 1234
 
-iter <- 20
+iter <- 10
 
 
 

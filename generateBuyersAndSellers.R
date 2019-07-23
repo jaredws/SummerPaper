@@ -64,7 +64,7 @@ generateSellers <- function(t,
       )
       
       s <- Seller(
-        Name = paste("Seller",t,r),
+        Name = paste("S",t,r),
         Price = Requirement(
           entry$Price * fuzzy[1],
           entry$Price,
@@ -198,7 +198,7 @@ generateBuyers <- function(t,
       tcore2 = max(rnorm(1,12*7, 7),7)
       
       b <- Buyer(
-        Name = paste("Buyer",t,r),
+        Name = paste("B",t,r),
         Price = Requirement(
           entry$Price * fuzzy[1],
           entry$Price,

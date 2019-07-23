@@ -1,6 +1,6 @@
 ## To execute the entire program over SSH
 
-session <- ssh_connect("jaredws@hoek.eecis.udel.edu")
+session <- ssh_connect("jaredws@catan.eecis.udel.edu")
 print(session)
 
 ## to run as a batch, run this in the terminal

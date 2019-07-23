@@ -1,11 +1,12 @@
-### SSH script for running the main function
-### executibles on the hoec server
+## To execute the entire program over SSH
 
-library(ssh)
-library(dplyr)
-library(FuzzyNumbers)
-library(tidyverse)
+session <- ssh_connect("jaredws@hoek.eecis.udel.edu")
+print(session)
 
+## Libraries needed
+# TODO how to upload libraries? maybe upload them? install them? 
+# library(dplyr)
+# library(FuzzyNumbers)
 
 ## Files needed:
 
@@ -17,71 +18,30 @@ library(tidyverse)
 # sellerClass.R
 # generateBuyersAndSellers.R
 # mainExecutable.R
+# sshExecutable.R
 
+scp_upload(session, "dataToDraw.csv")
+scp_upload(session, "seedList.csv")
+scp_upload(session, "requirementClass.R")
+scp_upload(session, "buyerClass.R")
+scp_upload(session, "realtorClass.R")
+scp_upload(session, "sellerClass.R")
+scp_upload(session, "generateBuyersAndSellers.R")
+scp_upload(session, "mainExecutable.R")
+scp_upload(session, "sshExecutable.R")
 
-source("requirementClass.R")
-source("buyerClass.R")
-source("realtorClass.R")
-source("sellerClass.R")
-source("generateBuyersAndSellers.R")
-source("mainExecutable.R")
+## Call R to the terminal
+ssh_exec_wait(session, command = "R")
+## Execute the sshExecutable to execute all the runs!
+ssh_exec_wait(session, command = "sshExecutable.R")
 
-
-#session <- ssh_connect("jaredws@hoek.eecis.udel.edu")
-#print(session)
+## Download back the final results
+scp_download(session, "RealizedData.RData")
 
 ### Generate 50 seeds to use in every Run and version of the program for comparison and reproduction
 #seedList <- as.data.frame(floor(runif(50,1,9999)))
 #colnames(seedList) <- c("Seed")
-
 #write.csv(seedList, file = "seedList.csv")
 
-seedList <- read.csv("seedList.csv", col.names = c("Run", "Seed"))
-
-runNames <- c("NoRealtor", "PerfectInfo")
-randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE)
-lagPlay <- c(TRUE, FALSE)
-iterations <- 5
-
-realizedData <- list()
-
-for (lag in lagPlay) {
-  for (version in runNames) {
-    for (run in 1:2) {
-      run <- as.numeric(run)
-      ## Name the index in the list as the type of run
-      ## Example:
-      ## NoRealtor_TRUE_1
-      ## Would be the first run of the NoRealtor version, with lagPlay active
-      
-      executing <- paste0(version, "_", lag, "_", run)
-      print(paste0("Now running: ",executing))
-      
-      ## This is going to get large ... very fast
-      ## I may want to write to disk more often, but we will see...
-      realizedData[[executing]] <-
-        main(ITERATIONS = iterations,
-             SEED = seedList[run, "Seed"],
-             RANDOM = randomness[[version]], ## Randomness depends on the version.
-             LAGPLAY = lag,
-             RUN_NAME = version)
-    }
-    
-  }
-}
-
-## Note: each execution of the system returns a list of the form:
-# RETURN <- list(
-#   "BuyerList" <- BuyerList_noRealtor,
-#   "SellerList" <- SellerList_noRealtor,
-#   "RealtorList" <- RealtorList_noRealtor,
-#   "Iteration_stats" <- iteration_stats_noRealtor,
-#   "House_sale_stats" <- house_sales_noRealtor,
-#   "BuyerInactive" <- BuyerInactive_noRealtor,
-#   "SellerInactive" <- SellerInactive_noRealtor
-# )
 
 
-
-## UPload all the files first, to account for any changes
-## Then run each main, taking the output data

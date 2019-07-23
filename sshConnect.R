@@ -3,8 +3,12 @@
 session <- ssh_connect("jaredws@hoek.eecis.udel.edu")
 print(session)
 
+## to run as a batch, run this in the terminal
+## R CMD BATCH "sshExecutable.R"
+
 ## Libraries needed
-# TODO how to upload libraries? maybe upload them? install them? 
+# TODO libraries? maybe upload them? install them? 
+# TODO will I need to install R on the remote machine?
 # library(dplyr)
 # library(FuzzyNumbers)
 

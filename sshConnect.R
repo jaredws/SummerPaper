@@ -1,5 +1,7 @@
 ## To execute the entire program over SSH
 
+library(ssh)
+
 session <- ssh_connect("jaredws@catan.eecis.udel.edu")
 print(session)
 
@@ -24,7 +26,7 @@ print(session)
 # mainExecutable.R
 # sshExecutable.R
 
-scp_upload(session, "dataToDraw.csv")
+scp_upload(session, "dataToDraw.csv",verbose = TRUE)
 scp_upload(session, "seedList.csv")
 scp_upload(session, "requirementClass.R")
 scp_upload(session, "buyerClass.R")
@@ -33,6 +35,8 @@ scp_upload(session, "sellerClass.R")
 scp_upload(session, "generateBuyersAndSellers.R")
 scp_upload(session, "mainExecutable.R")
 scp_upload(session, "sshExecutable.R")
+
+ssh_exec_wait(session, '--rcfile')
 
 ## Call R to the terminal
 ssh_exec_wait(session, command = "R")

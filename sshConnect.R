@@ -56,8 +56,7 @@ scp_upload(session, "sshExecutable.R")
 ## Execute the sshExecutable to execute all the runs!
 ## Still something wrong with the R command
 ssh_exec_wait(session, command = c(
-  "rm -Rf realizedData.RData",
-  "R CMD BATCH /usa/jaredws/sshExecutable.R"))
+  "rm -Rf realizedData.RData"))
 
 ## Download back the final results
 scp_download(session, "/usa/jaredws/realizedData.RData")

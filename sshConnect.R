@@ -12,8 +12,7 @@ print(session)
 ## unsure of their computing difference
 
 ## Libraries needed
-# TODO libraries? maybe upload them? install them? 
-# TODO will I need to install R on the remote machine?
+## Had to install libraries to a user file, I beleive they will remain there within my account
 # library(dplyr)
 # library(FuzzyNumbers)
 

@@ -399,7 +399,17 @@ setMethod("matchMake",
               
               #filter(Price <= byr$Price[[1]][[1]] * byr$Fuzziness[[1]]$Price@support2) %>%
               houses <- realtor@Houses %>%
-                select(Address, Price, Beds, Baths, SqrFt, LotSize)
+                select(Address, Price, Beds, Baths, SqrFt, LotSize) %>%
+                filter(Price <= byr$Price[[1]][[1]] * (byr$Fuzziness[[1]]$Price@support2 + 0.1))
+              ## Even though the realtor knows the exact fuzziness of the buyer in my model, 
+              ## it is worthwhile to incrase the price fuzziness a little bit more given the 
+              ## Requirement/Preference strucutre I laid in.
+              
+              if(nrow(houses) == 0){
+                ## If there no houses within the price range for this buyer, 
+                ## jump to the next one
+                next
+              }
 
               buyerhousematch <-
                 as.data.frame((matrix(ncol = 20, nrow = 0)))

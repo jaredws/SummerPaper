@@ -194,7 +194,7 @@ setMethod("getFeedback",
             ## First, find the buyer in our list
             
             if(nrow(client@CurrentOffer) ==0){
-              return(r)
+              return(realtor)
             }
             
             buyerEntry <-

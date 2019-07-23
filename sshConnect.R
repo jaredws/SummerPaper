@@ -8,6 +8,9 @@ print(session)
 ## to run as a batch, run this in the terminal
 ## R CMD BATCH "sshExecutable.R"
 
+## hoek.eecis.udel.edu and cata.eecis.udel.edu have the same directory of files ..
+## unsure of their computing difference
+
 ## Libraries needed
 # TODO libraries? maybe upload them? install them? 
 # TODO will I need to install R on the remote machine?
@@ -26,7 +29,21 @@ print(session)
 # mainExecutable.R
 # sshExecutable.R
 
-scp_upload(session, "dataToDraw.csv",verbose = TRUE)
+## Remove old files
+ssh_exec_wait(session, command = c(
+  "rm -Rf dataToDraw.csv",
+  "rm -Rf seedList.csv",
+  "rm -Rf requirementClass.R",
+  "rm -Rf buyerClass.R",
+  "rm -Rf realtorClass.R",
+  "rm -Rf sellerClass",
+  "rm -Rf generateBuyersAndSellers.R",
+  "rm -Rf mainExecutable.R",
+  "rm -Rf sshExecutable.R"
+  ))
+
+## Upload new ones
+scp_upload(session, "dataToDraw.csv")
 scp_upload(session, "seedList.csv")
 scp_upload(session, "requirementClass.R")
 scp_upload(session, "buyerClass.R")
@@ -36,15 +53,17 @@ scp_upload(session, "generateBuyersAndSellers.R")
 scp_upload(session, "mainExecutable.R")
 scp_upload(session, "sshExecutable.R")
 
-ssh_exec_wait(session, '--rcfile')
-
 ## Call R to the terminal
-ssh_exec_wait(session, command = "R")
 ## Execute the sshExecutable to execute all the runs!
-ssh_exec_wait(session, command = "sshExecutable.R")
+## Still something wrong with the R command
+ssh_exec_wait(session, command = c(
+  "rm -Rf realizedData.RData",
+  "R CMD BATCH 'sshExecutable.R'"))
 
 ## Download back the final results
-scp_download(session, "RealizedData.RData")
+scp_download(session, "/usa/jaredws/realizedData.RData")
+## consier renaming the file to it's executed time ..
+
 
 ### Generate 50 seeds to use in every Run and version of the program for comparison and reproduction
 #seedList <- as.data.frame(floor(runif(50,1,9999)))

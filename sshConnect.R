@@ -28,10 +28,16 @@ print(session)
 # mainExecutable.R
 # sshExecutable.R
 
+
+## create a tmux session 'remote' execute the script
+## in absence of my login to the server
+ssh_exec_wait(session, command = c(
+ "tmux a -t remote"
+)
+)
+
 ## Remove old files
 ssh_exec_wait(session, command = c(
-  "rm -Rf dataToDraw.csv",
-  "rm -Rf seedList.csv",
   "rm -Rf requirementClass.R",
   "rm -Rf buyerClass.R",
   "rm -Rf realtorClass.R",
@@ -52,17 +58,18 @@ scp_upload(session, "generateBuyersAndSellers.R")
 scp_upload(session, "mainExecutable.R")
 scp_upload(session, "sshExecutable.R")
 
+## 
+
+
 ## Call R to the terminal
 ## Execute the sshExecutable to execute all the runs!
 ## Still something wrong with the R command
-ssh_exec_wait(session, command = c(
-  "rm -Rf realizedData.RData"))
 
 ## Download back the final results
-scp_download(session, "/usa/jaredws/realizedData.RData")
-## consier renaming the file to it's executed time ..
+#scp_download(session, "/usa/jaredws/realizedData.RData")
+## consier renaming the file to it's executed time and description
 
-
+ssh_disconnect(session)
 ### Generate 50 seeds to use in every Run and version of the program for comparison and reproduction
 #seedList <- as.data.frame(floor(runif(50,1,9999)))
 #colnames(seedList) <- c("Seed")

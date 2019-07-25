@@ -31,10 +31,14 @@ print(session)
 
 ## create a tmux session 'remote' execute the script
 ## in absence of my login to the server
+# ssh_exec_wait(session, command = c(
+#  "tmux a -t sharpe"
+# )
+# )
+
 ssh_exec_wait(session, command = c(
- "tmux a -t remote"
-)
-)
+  "tmux ls"
+))
 
 ## Remove old files
 ssh_exec_wait(session, command = c(

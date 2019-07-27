@@ -4,13 +4,14 @@ library(dplyr)
 library(ggplot2)
 library(zoo)
 library(imputeTS)
+library(ssh)
 
-#session <- ssh_connect("jaredws@catan.eecis.udel.edu")
+session <- ssh_connect("jaredws@catan.eecis.udel.edu")
 
 
 runNames <- c("NoRealtor","PerfectInfo")
 randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE)
-lagPlay <- c(TRUE)
+lagPlay <- c(TRUE, FALSE)
 iterations <- 50
 
 realizedData <- list()
@@ -33,7 +34,7 @@ for (lag in lagPlay) {
       fileName <- paste0("/usa/jaredws/",executing,"_realizedData.RData")
       
       ## Download the output data
-      #scp_download(session, fileName)
+      scp_download(session, fileName)
       
       load(paste0(getwd(),"/",executing,"_realizedData.RData"))
       
@@ -70,7 +71,7 @@ save(house_sales_compiled, file = paste0(getwd(),"/house_sales_compiled_raw.RDat
 
 load(paste0(getwd(),"/iteration_stats_compiled_raw.RData"))
 
-#ssh_disconnect(session)
+ssh_disconnect(session)
 
 house_sales_compiled %>%
   group_by(Realtor, LagPlay) %>%

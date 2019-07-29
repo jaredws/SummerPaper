@@ -16,7 +16,7 @@ iterations <- 50
 
 realizedData <- list()
 
-RUNS <- seq(1,5)
+RUNS <- seq(1,10)
 
 house_sales_compiled <- as.data.frame(matrix(ncol = 18, nrow = 0))
 iteration_stats_compiled <- as.data.frame(matrix(ncol = 12, nrow = 0))
@@ -104,15 +104,20 @@ iteration_stats_compiled <- iteration_stats_compiled %>%
 
 
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = rollOffers, color = Realtor))
+  geom_point(aes(x = Iteration, y = rollOffers, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = rollSales, color = Realtor))
+  geom_point(aes(x = Iteration, y = rollSales, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = roll_av_ToM, color = Realtor))
+  geom_point(aes(x = Iteration, y = roll_av_ToM, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor))
+  geom_point(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = TotalCommission, color = Realtor))
+  geom_point(aes(x = Iteration, y = TotalCommission, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 
 ## Generate iteration averages across each run
 ### This will be very complicated, or could be, if I want to show Address wise averages
@@ -137,14 +142,18 @@ commissionCI <- iteration_stats_compiled %>%
             TC_upper = TC_mean + TC_error)
 
 ggplot(iteration_stats_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_Sales, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_Sales, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_Offers, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_Offers, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_PriceIncreases, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_PriceIncreases, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(commissionCI, aes(x = Iteration, y = TC_mean, color = Realtor, group = Realtor)) +
   geom_line(aes(x = Iteration, y = TC_mean, color = Realtor)) +
-  geom_ribbon(aes(x = Iteration, ymin = TC_lower, ymax = TC_upper))
+  geom_ribbon(aes(x = Iteration, ymin = TC_lower, ymax = TC_upper))+
+  facet_grid(rows = vars(LagPlay))
   
 house_sales_Iter_Averages <- house_sales_compiled %>%
   ungroup() %>%
@@ -154,14 +163,22 @@ house_sales_Iter_Averages <- house_sales_compiled %>%
          iter_av_SalePrice = mean(Bid))
 
 ggplot(house_sales_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_SellerSatisfaction, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_SellerSatisfaction, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(house_sales_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_BuyerSatisfaction, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_BuyerSatisfaction, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 ggplot(house_sales_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_SalePrice, color = Realtor))
+  geom_line(aes(x = Iteration, y = iter_av_SalePrice, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 
 ## Using the T test, we can clearly see a statistical difference in the SalePrice
 x <- filter(house_sales_Iter_Averages, Realtor == "NoRealtor")$iter_av_SalePrice
 y <- filter(house_sales_Iter_Averages, Realtor == "PerfectInfo")$iter_av_SalePrice
+t.test(x,y)
+
+## Using the T test, we can clearly see a statistical difference in the SalePrice
+x <- filter(house_sales_Iter_Averages, Realtor == "NoRealtor")$iter_av_BuyerSatisfaction
+y <- filter(house_sales_Iter_Averages, Realtor == "PerfectInfo")$iter_av_BuyerSatisfaction
 t.test(x,y)
 

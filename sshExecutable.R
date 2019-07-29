@@ -24,7 +24,7 @@ iterations <- 50
 
 realizedData <- list()
 
-RUNS <- seq(6,10)
+RUNS <- seq(11,20)
 
 for (lag in lagPlay) {
   for (version in runNames) {

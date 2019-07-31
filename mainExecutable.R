@@ -223,9 +223,19 @@ main <-
           }
           ## or take from the Realtor's matchMake
           else{
+            
+            if(r@Name == "PerfectInfo"){
             houses <- filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
               arrange(desc(TimeStamp), desc(Buyer_AV)) %>%
               select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
+            }
+            ## Else, sort descending by Buyer Value to max profit
+            else{
+              houses <- filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
+                arrange(desc(TimeStamp), desc(Buyer_Value)) %>%
+                select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
+            
+            }
             ## Only inform on the top 3
             ## Gain information every turn, even if no action is taken
             if (nrow(houses) > 3) {

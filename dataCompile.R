@@ -16,7 +16,7 @@ iterations <- 50
 
 realizedData <- list()
 
-RUNS <- seq(1,10)
+RUNS <- seq(1,13)
 
 house_sales_compiled <- as.data.frame(matrix(ncol = 18, nrow = 0))
 iteration_stats_compiled <- as.data.frame(matrix(ncol = 12, nrow = 0))
@@ -137,7 +137,7 @@ commissionCI <- iteration_stats_compiled %>%
   group_by(Realtor, LagPlay, Iteration) %>%
   summarise(TC_mean = mean(TotalCommission),
             TC_stdev = sqrt(var(TotalCommission)),
-            TC_error = qt(0.95, df = max(RUNS)-1) * TC_stdev / max(RUNS),
+            TC_error = qt(0.99, df = max(RUNS)-1) * TC_stdev / max(RUNS),
             TC_lower = TC_mean - TC_error,
             TC_upper = TC_mean + TC_error)
 
@@ -177,8 +177,13 @@ x <- filter(house_sales_Iter_Averages, Realtor == "NoRealtor")$iter_av_SalePrice
 y <- filter(house_sales_Iter_Averages, Realtor == "PerfectInfo")$iter_av_SalePrice
 t.test(x,y)
 
-## Using the T test, we can clearly see a statistical difference in the SalePrice
+## Using the T test, we can clearly see a statistical difference in the BuyerSatisfaction
 x <- filter(house_sales_Iter_Averages, Realtor == "NoRealtor")$iter_av_BuyerSatisfaction
 y <- filter(house_sales_Iter_Averages, Realtor == "PerfectInfo")$iter_av_BuyerSatisfaction
+t.test(x,y)
+
+## Using the T test, we can clearly see a statistical difference in the number of Offers
+x <- filter(iteration_stats_compiled, Realtor == "NoRealtor", LagPlay == TRUE)$Offers
+y <- filter(iteration_stats_compiled, Realtor == "PerfectInfo", LagPlay == TRUE)$Offers
 t.test(x,y)
 

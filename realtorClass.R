@@ -555,9 +555,11 @@ setMethod("matchMake",
                 ## jump to the next one
                 next
               }
+              
               buyerhousematch <- buyerhousematch %>%
                 arrange(desc(TimeStamp)) %>%
                 distinct(Buyer, Address, .keep_all = TRUE)
+            
               
               realtor@BuyerHouseMatch <-
                 rbind(realtor@BuyerHouseMatch, buyerhousematch)

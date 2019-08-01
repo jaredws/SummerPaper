@@ -109,11 +109,15 @@ ggplot(iteration_stats_compiled) +
 ggplot(iteration_stats_compiled) +
   geom_point(aes(x = Iteration, y = rollSales, color = Realtor))+
   facet_grid(rows = vars(LagPlay))
+
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = roll_av_ToM, color = Realtor))+
+  geom_smooth(aes(x = Iteration, y = roll_av_ToM, color = Realtor))+
   facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
-  geom_point(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor))+
+  geom_smooth(aes(x = Iteration, y = roll_av_ToM, color = Realtor, linetype = LagPlay))
+
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor))+
   facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_compiled) +
   geom_point(aes(x = Iteration, y = TotalCommission, color = Realtor))+
@@ -132,6 +136,8 @@ iteration_stats_Iter_Averages <- iteration_stats_compiled %>%
          iter_av_PriceIncreases = mean(PriceIncreases),
          iter_av_TotalCommission = mean(TotalCommission))
 
+
+## Plot 99% Confidence Intervals for the Total Commission plots
 commissionCI <- iteration_stats_compiled %>%
   select(Realtor, LagPlay, Run, Iteration, TotalCommission) %>%
   group_by(Realtor, LagPlay, Iteration) %>%

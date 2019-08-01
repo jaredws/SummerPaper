@@ -9,7 +9,6 @@ main <-
            RANDOM = TRUE,
            LAGPLAY = FALSE,
            RUN_NAME = "DEFAULT") {
-    
     start <- Sys.time()
     
     print(paste("Start time:", start))
@@ -63,7 +62,7 @@ main <-
       "Time" = list("Mean" =  0.25, "Stdev" = 0.08),
       "MinQoS" = seller_params$MinQoS ## For simplicity
     )
-
+    
     BuyerList_noRealtor <- list()
     SellerList_noRealtor <- list()
     RealtorList_noRealtor <- list()
@@ -221,27 +220,24 @@ main <-
                      LotSize,
                      UpdateTime)
           }
-          ## or take from the Realtor's matchMake
-          else{
-            
-            if(r@Name == "PerfectInfo"){
+          
+          if (r@Name == "PerfectInfo") {
             houses <- filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
               arrange(desc(TimeStamp), desc(Buyer_AV)) %>%
               select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
-            }
-            ## Else, sort descending by Buyer Value to max profit
-            else{
-              houses <- filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
-                arrange(desc(TimeStamp), desc(Buyer_Value)) %>%
-                select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
-            
-            }
-            ## Only inform on the top 3
-            ## Gain information every turn, even if no action is taken
-            if (nrow(houses) > 3) {
-              houses <- houses[1:3, ]
-            }
-            ## Else, we just offer as many houses as found
+          }
+          ## Else, sort descending by Buyer Value to max profit
+          if (r@Name == "MaxProfit") {
+            houses <- filter(r@BuyerHouseMatch, 
+                             Buyer == b@Name,
+                             Buyer_AV >= b@MinQoS) %>%
+              arrange(desc(TimeStamp), desc(Buyer_Value)) %>%
+              select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
+          }
+          ## Only inform on the top 3
+          ## Gain information every turn, even if no action is taken
+          if (nrow(houses) > 3) {
+            houses <- houses[1:3,]
           }
           
           colnames(houses) <-

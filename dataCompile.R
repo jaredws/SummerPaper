@@ -9,14 +9,14 @@ library(ssh)
 session <- ssh_connect("jaredws@catan.eecis.udel.edu")
 
 
-runNames <- c("NoRealtor","PerfectInfo")
+runNames <- c("NoRealtor","PerfectInfo")#, "MaxProfit")
 randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE)
 lagPlay <- c(TRUE, FALSE)
 iterations <- 50
 
 realizedData <- list()
 
-RUNS <- seq(1,13)
+RUNS <- seq(1,20)
 
 house_sales_compiled <- as.data.frame(matrix(ncol = 18, nrow = 0))
 iteration_stats_compiled <- as.data.frame(matrix(ncol = 12, nrow = 0))

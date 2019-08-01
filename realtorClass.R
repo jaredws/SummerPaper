@@ -55,7 +55,7 @@ setMethod("initialize", "Realtor",
               as.data.frame(matrix(ncol = 4, nrow = 0))
             
             .Object@BuyerHouseMatch <-
-              as.data.frame(matrix(ncol = 16, nrow = 0))
+              as.data.frame(matrix(ncol = 17, nrow = 0))
             
             .Object@Buyers <-
               as.data.frame(matrix(ncol = 13, nrow = 0))
@@ -431,6 +431,9 @@ setMethod("matchMake",
                 AV_seller <- 0
                 seller <-
                   filter(realtor@Sellers, House == house$Address)
+                
+                buyerhousematchEntry$Seller <- seller$Name
+                
                 seller_price_fn <-
                   realtorGuess(seller$Price[[1]], seller$Fuzziness[[1]]$Price)
                 byr_price_fn <-
@@ -524,6 +527,10 @@ setMethod("matchMake",
                 poss = possibilityExceedance(byr_bid_fn, seller_price_fn)
                 AV_seller <-
                   AV_seller + seller$Preferences[[1]][["Price"]] * poss
+                
+                if(AV_seller < seller$MinQoS){
+                  next
+                }
 
                 #if(AV_buyer >= byr$MinQoS && AV_seller >= seller$MinQoS){
 

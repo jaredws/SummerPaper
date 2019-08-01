@@ -43,11 +43,11 @@ for (lag in lagPlay) {
       colnames(realizedData[[4]]) <- cnames
       
       realizedData[[4]]$Realtor <- version
-      realizedData[[4]]$LagPlay <- lag
+      realizedData[[4]]$LagPlay <- ifelse(lag, "LagPlay", "PlayEveryRound")
       realizedData[[4]]$Run <- run
       iteration_stats_compiled <- rbind(iteration_stats_compiled,realizedData[[4]])
       
-      realizedData[[5]]$LagPlay <- lag
+      realizedData[[5]]$LagPlay <- ifelse(lag, "LagPlay", "PlayEveryRound")
       realizedData[[5]]$Run <- run
       house_sales_compiled <- rbind(house_sales_compiled,realizedData[[5]])
       
@@ -186,4 +186,20 @@ t.test(x,y)
 x <- filter(iteration_stats_compiled, Realtor == "NoRealtor", LagPlay == TRUE)$Offers
 y <- filter(iteration_stats_compiled, Realtor == "PerfectInfo", LagPlay == TRUE)$Offers
 t.test(x,y)
+
+## To show the same number of buyers and sellers are generated for each LagPlay and Realtor per Run,
+## I need to show the sum of Buyers less the sales...
+## need to think more 
+iteration_stats_summary <- iteration_stats_compiled %>%
+  ungroup() %>%
+  arrange(Run, Realtor, LagPlay, Iteration) %>%
+  group_by(Run, Realtor, LagPlay, Iteration) %>%
+  mutate(gBuyers = nBuyers - lag(nBuyers,1, order_by = c(Iteration)) + lag(Sales,1, order_by = c(Iteration)),
+         gSellers = nSellers - lag(nSellers,1, order_by = c(Iteration)) + lag(Sales,1, order_by = c(Iteration))) %>%
+  summarise(tBuyers = sum(gBuyers),
+            tSellers = sum(gSellers))
+
+ggplot(iteration_stats_summary)+
+  geom_point(aes(x = Run, y = tBuyers, color = Realtor))+
+  facet_grid(rows = vars(LagPlay))
 

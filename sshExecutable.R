@@ -19,12 +19,12 @@ seedList <- read.csv("seedList.csv", col.names = c("Run", "Seed"))
 
 runNames <- c("MaxProfit")
 randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE, "MaxProfit" = FALSE)
-lagPlay <- c(TRUE,FALSE)
+lagPlay <- c(FALSE)
 iterations <- 50
 
 realizedData <- list()
 
-RUNS <- seq(1,20)
+RUNS <- seq(8,20)
 
 for (lag in lagPlay) {
   for (version in runNames) {

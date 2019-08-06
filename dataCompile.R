@@ -26,10 +26,6 @@ for (lag in lagPlay) {
   for (version in runNames) {
     for (run in RUNS) {
 
-      if(version == "MaxProfit" && run > 6 && !lag){
-        next
-      }
-      
       
       run <- as.numeric(run)
       ## Name the index in the list as the type of run
@@ -158,9 +154,17 @@ commissionCI <- iteration_stats_compiled %>%
 
 
 ## Commparing Rolling number of offers to rolling number of Sales
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(x = Iteration, y = rollOffers, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
+## need to gather on rollSales and rollOffers to get a comparable plot
+iteration_stats_rollGather <- iteration_stats_compiled %>%
+  group_by(Realtor, LagPlay, Run) %>%
+  gather(rollOffers, rollSales, key = "rollStatType", value = "rollStatValue") %>%
+  group_by(Realtor, LagPlay, Run, rollStatType) %>%
+  mutate(rollTrend = (rollStatValue - min(rollStatValue))/ (max(rollStatValue) - min(rollStatValue)))
+
+
+ggplot(iteration_stats_rollGather) +
+  geom_smooth(aes(x = Iteration, y = rollTrend, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay), col = vars(rollStatType))
 ggplot(iteration_stats_compiled) +
   geom_smooth(aes(x = Iteration, y = rollSales, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
@@ -219,14 +223,15 @@ house_sales_Iter_Averages <- house_sales_compiled %>%
   )
 
 ggplot(house_sales_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_SellerSatisfaction, color = Realtor)) +
+  geom_smooth(aes(x = Iteration, y = SellerSatisfaction, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
 ggplot(house_sales_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_BuyerSatisfaction, color = Realtor)) +
+  geom_smooth(aes(x = Iteration, y = BuyerSatisfaction, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
 ggplot(house_sales_Iter_Averages) +
-  geom_smooth(aes(x = Iteration, y = iter_av_SalePrice, color = Realtor)) +
+  geom_smooth(aes(x = Iteration, y = Bid, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
+
 
 ## Using the T test, we can clearly see a statistical difference in the SalePrice
 x <-

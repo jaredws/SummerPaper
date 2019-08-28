@@ -5,8 +5,9 @@ library(ggplot2)
 library(zoo)
 library(imputeTS)
 library(ssh)
-
-session <- ssh_connect("jaredws@catan.eecis.udel.edu")
+library(ggthemes)
+library(tidyverse)
+theme_set(theme_bw())
 
 
 runNames <- c("MaxProfit","NoRealtor", "PerfectInfo")
@@ -17,6 +18,9 @@ iterations <- 50
 realizedData <- list()
 
 RUNS <- seq(1, 20)
+
+#### Downlowd and Compile the Data ####
+session <- ssh_connect("jaredws@catan.eecis.udel.edu")
 
 house_sales_compiled <- as.data.frame(matrix(ncol = 18, nrow = 0))
 iteration_stats_compiled <-
@@ -82,6 +86,18 @@ save(house_sales_compiled,
 
 load(paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
 
+#### Clean and Organize the Data ####
+
+load(paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
+load(paste0(getwd(), "/house_sales_compiled_raw.RData"))
+
+
+## Rename PerfectInfo as MaxSatisfaction Realtor
+levels(house_sales_compiled$Realtor) <- c("MaxProfit", "RandomDraw", "MaxSatisfaction")
+##  "MaxProfit"   "NoRealtor"   "PerfectInfo"
+iteration_stats_compiled$Realtor <- as.factor(iteration_stats_compiled$Realtor)
+levels(iteration_stats_compiled$Realtor) <- c("MaxProfit", "RandomDraw", "MaxSatisfaction")
+## "MaxProfit"   "NoRealtor"   "PerfectInfo"
 
 house_sales_compiled %>%
   group_by(Realtor, LagPlay) %>%
@@ -162,42 +178,34 @@ iteration_stats_rollGather <- iteration_stats_compiled %>%
   mutate(rollTrend = (rollStatValue - min(rollStatValue))/ (max(rollStatValue) - min(rollStatValue)))
 
 
+house_sales_Iter_Averages <- house_sales_compiled %>%
+  ungroup() %>%
+  #filter(Run < 2) %>%
+  group_by(Realtor, LagPlay, Iteration) %>%
+  mutate(
+    iter_av_SellerSatisfaction = mean(SellerSatisfaction),
+    iter_av_BuyerSatisfaction = mean(BuyerSatisfaction),
+    iter_av_SalePrice = mean(Bid)
+  )
+
+
+#### PLOTS ####
+
 ggplot(iteration_stats_rollGather) +
   geom_smooth(aes(x = Iteration, y = rollTrend, color = Realtor)) +
   facet_grid(rows = vars(LagPlay), col = vars(rollStatType))
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(x = Iteration, y = rollSales, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
 
 
-## Compare the rolling average time on the market both with respect to the Realtor's
-## and to LagPlay
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(x = Iteration, y = roll_av_ToM, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(
-    x = Iteration,
-    y = roll_av_ToM,
-    color = Realtor,
-    linetype = LagPlay
-  ))
-
-## Compare rolling average Sale Price and Total Commission
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
-ggplot(iteration_stats_compiled) +
-  geom_smooth(aes(x = Iteration, y = TotalCommission, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
-
-
+## Not used, iter_av_Sales_n_Offers
+#####
 ggplot(iteration_stats_Iter_Averages) +
-  geom_line(aes(x = Iteration, y = iter_av_Sales, color = Realtor)) +
+  geom_smooth(aes(x = Iteration, y = iter_av_Sales, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
 ggplot(iteration_stats_Iter_Averages) +
   geom_line(aes(x = Iteration, y = iter_av_Offers, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
+####    ####
+
 ggplot(iteration_stats_Iter_Averages) +
   geom_line(aes(x = Iteration, y = iter_av_PriceIncreases, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
@@ -212,59 +220,8 @@ ggplot(commissionCI,
   geom_ribbon(aes(x = Iteration, ymin = TC_lower, ymax = TC_upper)) +
   facet_grid(rows = vars(LagPlay))
 
-house_sales_Iter_Averages <- house_sales_compiled %>%
-  ungroup() %>%
-  #filter(Run < 2) %>%
-  group_by(Realtor, LagPlay, Iteration) %>%
-  mutate(
-    iter_av_SellerSatisfaction = mean(SellerSatisfaction),
-    iter_av_BuyerSatisfaction = mean(BuyerSatisfaction),
-    iter_av_SalePrice = mean(Bid)
-  )
-
-ggplot(house_sales_Iter_Averages) +
-  geom_smooth(aes(x = Iteration, y = SellerSatisfaction, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
-ggplot(house_sales_Iter_Averages) +
-  geom_smooth(aes(x = Iteration, y = BuyerSatisfaction, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
-ggplot(house_sales_Iter_Averages) +
-  geom_smooth(aes(x = Iteration, y = Bid, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
 
 
-## Using the T test, we can clearly see a statistical difference in the SalePrice
-x <-
-  filter(house_sales_Iter_Averages, Realtor == "MaxProfit", LagPlay == "LagPlay")$iter_av_SalePrice
-y <-
-  filter(house_sales_Iter_Averages, Realtor == "PerfectInfo", LagPlay == "LagPlay")$iter_av_SalePrice
-t.test(x, y)
-
-## Using the T test, we can clearly see a statistical difference in the BuyerSatisfaction
-x <-
-  filter(house_sales_Iter_Averages, Realtor == "MaxProfit", LagPlay == "LagPlay")$iter_av_BuyerSatisfaction
-y <-
-  filter(house_sales_Iter_Averages, Realtor == "PerfectInfo", LagPlay == "LagPlay")$iter_av_BuyerSatisfaction
-t.test(x, y)
-
-
-## Using the T test, we can clearly see a statistical difference in the SellerSatisfaction
-x <-
-  filter(house_sales_Iter_Averages, Realtor == "MaxProfit")$iter_av_SellerSatisfaction
-y <-
-  filter(house_sales_Iter_Averages, Realtor == "PerfectInfo")$iter_av_SellerSatisfaction
-t.test(x, y)
-
-## Using the T test, we can clearly see a statistical difference in the number of Offers
-x <-
-  filter(iteration_stats_compiled,
-         Realtor == "MaxProfit",
-         LagPlay == "LagPlay")$Offers
-y <-
-  filter(iteration_stats_compiled,
-         Realtor == "PerfectInfo",
-         LagPlay == "LagPlay")$Offers
-t.test(x, y)
 
 ## To show the same number of buyers and sellers are generated for each LagPlay and Realtor per Run,
 ## I need to show the sum of Buyers less the sales...
@@ -283,3 +240,273 @@ iteration_stats_summary <- iteration_stats_compiled %>%
 ggplot(iteration_stats_summary) +
   geom_point(aes(x = Run, y = tBuyers, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
+
+
+
+
+#### In Paper Order: #### 
+#'Cumulative number of sales 
+#'cumulative number of offers
+#'cumulative number of price increases
+#'
+#'rolling average sale price
+#'iteration average sale price
+#'iteration average bid price
+#'cumulative commision
+#'
+#'average time on market
+#'average seller satisfaction
+#'average buyer satisfaction
+#'
+
+## Cumulative Number of Sales
+
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = rollSales, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+## Using the T test, we can clearly see a statistical difference in the number of Sales
+# LagPlay
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$Sales
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$Sales
+t.test(x, y)
+## Play every round
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$Sales
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$Sales
+t.test(x, y)
+
+
+## Cumulative Number of Offers ##
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = rollOffers, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+## Using the T test, we can clearly see a statistical difference in the number of Offers
+# LagPlay
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$Offers
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$Offers
+t.test(x, y)
+## Play every round
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$Offers
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$Offers
+t.test(x, y)
+##
+
+## Cumulative Number of price increases ##
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = rollPriceIncreases, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+## Using the T test, we can clearly see a statistical difference in the number of Offers
+# LagPlay
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$PriceIncreases
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$PriceIncreases
+t.test(x, y)
+## Play every round
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$PriceIncreases
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$PriceIncreases
+t.test(x, y)
+##
+
+## Rolling average Sale price
+## Compare rolling average Sale Price and Total Commission
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = roll_av_SalePrice, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+
+## Iteration average sale price
+ggplot(house_sales_Iter_Averages) +
+  geom_smooth(aes(x = Iteration, y = Price, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+## Using the T test, we cannot see a statistical difference in the sale price between the two realtors
+# LagPlay
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$Price
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$Price
+t.test(x, y)
+## Play every round
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$Price
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$Price
+t.test(x, y)
+##
+
+
+## Iteration average bid price
+ggplot(house_sales_Iter_Averages) +
+  geom_smooth(aes(x = Iteration, y = Bid, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+## Using the T test, we cannot see a statistical difference in the bid price
+# LagPlay
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$Bid
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$Bid
+t.test(x, y)
+## Play every round
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$Bid
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$Bid
+t.test(x, y)
+##
+
+
+## Cumulative average Total Commission
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = TotalCommission, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+
+####
+
+## Iteration Average Time on Market (2 plots)
+## Compare the rolling average time on the market both with respect to the Realtor's
+## and to LagPlay
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(x = Iteration, y = roll_av_ToM, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+
+ggplot(iteration_stats_compiled) +
+  geom_smooth(aes(
+    x = Iteration,
+    y = roll_av_ToM,
+    color = Realtor,
+    linetype = LagPlay
+  ))
+
+## Using the T test, we cannot see a statistical difference in the rolling average time on market
+# LagPlay
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$roll_av_ToM
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$roll_av_ToM
+t.test(x, y)
+## Play every round
+x <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$roll_av_ToM
+y <-
+  filter(iteration_stats_compiled,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$roll_av_ToM
+t.test(x, y)
+
+
+## Iteration average Seller Satisfaction
+ggplot(house_sales_Iter_Averages) +
+  geom_smooth(aes(x = Iteration, y = SellerSatisfaction, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+## Using the T test, we cannot see a statistical difference in the seller satisfaction
+# LagPlay
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$SellerSatisfaction
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$SellerSatisfaction
+t.test(x, y)
+## Play every round
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$SellerSatisfaction
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$SellerSatisfaction
+t.test(x, y)
+
+
+
+## Iteration average Buyer Satisfaction
+ggplot(house_sales_Iter_Averages) +
+  geom_smooth(aes(x = Iteration, y = BuyerSatisfaction, color = Realtor)) +
+  facet_grid(rows = vars(LagPlay))
+## Using the T test, we cannot see a statistical difference in the buyer satisfaction
+# LagPlay
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "LagPlay")$BuyerSatisfaction
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "LagPlay")$BuyerSatisfaction
+t.test(x, y)
+## Play every round
+x <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxProfit",
+         LagPlay == "PlayEveryRound")$BuyerSatisfaction
+y <-
+  filter(house_sales_Iter_Averages,
+         Realtor == "MaxSatisfaction",
+         LagPlay == "PlayEveryRound")$BuyerSatisfaction
+t.test(x, y)
+
+
+
+####

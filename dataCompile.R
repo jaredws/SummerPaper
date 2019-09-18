@@ -10,8 +10,8 @@ library(tidyverse)
 theme_set(theme_bw())
 
 
-runNames <- c("MaxProfit","NoRealtor", "PerfectInfo")
-randomness <- list("MaxProfit" == FALSE,"NoRealtor" = TRUE, "PerfectInfo" = FALSE)
+runNames <- c("MaxProfit","NoRealtor", "PerfectInfo", "RandomDraw5")
+randomness <- list("MaxProfit" == FALSE, "RandomDraw5" = TRUE,"NoRealtor" = TRUE, "PerfectInfo" = FALSE)
 lagPlay <- c(TRUE, FALSE)
 iterations <- 50
 
@@ -93,10 +93,10 @@ load(paste0(getwd(), "/house_sales_compiled_raw.RData"))
 
 
 ## Rename PerfectInfo as MaxSatisfaction Realtor
-levels(house_sales_compiled$Realtor) <- c("MaxProfit", "RandomDraw", "MaxSatisfaction")
+levels(house_sales_compiled$Realtor) <- c("MaxProfit", "RandomDraw3", "MaxSatisfaction", "RandomDraw5")
 ##  "MaxProfit"   "NoRealtor"   "PerfectInfo"
 iteration_stats_compiled$Realtor <- as.factor(iteration_stats_compiled$Realtor)
-levels(iteration_stats_compiled$Realtor) <- c("MaxProfit", "RandomDraw", "MaxSatisfaction")
+levels(iteration_stats_compiled$Realtor) <- c("MaxProfit", "RandomDraw3", "MaxSatisfaction", "RandomDraw5")
 ## "MaxProfit"   "NoRealtor"   "PerfectInfo"
 
 house_sales_compiled %>%
@@ -123,7 +123,7 @@ house_sales_av_ToM <- house_sales_compiled %>%
 iteration_stats_compiled <- iteration_stats_compiled %>%
   group_by(Realtor, LagPlay, Run) %>%
   arrange(Realtor, LagPlay, Run, Iteration) %>%
-  left_join(house_sales_av_ToM,
+  inner_join(house_sales_av_ToM,
             by = c("Realtor", "LagPlay", "Run", "Iteration"))
 
 ##na_ma replaces NA values with the weighted average of the k elements on both sides
@@ -226,20 +226,20 @@ ggplot(commissionCI,
 ## To show the same number of buyers and sellers are generated for each LagPlay and Realtor per Run,
 ## I need to show the sum of Buyers less the sales...
 ## need to think more
-iteration_stats_summary <- iteration_stats_compiled %>%
-  ungroup() %>%
-  arrange(Run, Realtor, LagPlay, Iteration) %>%
-  group_by(Run, Realtor, LagPlay, Iteration) %>%
-  mutate(
-    gBuyers = nBuyers - lag(nBuyers, 1, order_by = c(Iteration)) + lag(Sales, 1, order_by = c(Iteration)),
-    gSellers = nSellers - lag(nSellers, 1, order_by = c(Iteration)) + lag(Sales, 1, order_by = c(Iteration))
-  ) %>%
-  summarise(tBuyers = sum(gBuyers),
-            tSellers = sum(gSellers))
-
-ggplot(iteration_stats_summary) +
-  geom_point(aes(x = Run, y = tBuyers, color = Realtor)) +
-  facet_grid(rows = vars(LagPlay))
+# iteration_stats_summary <- iteration_stats_compiled %>%
+#   ungroup() %>%
+#   arrange(Run, Realtor, LagPlay, Iteration) %>%
+#   group_by(Run, Realtor, LagPlay, Iteration) %>%
+#   mutate(
+#     gBuyers = nBuyers - lag(nBuyers, 1, order_by = c(Iteration)) + lag(Sales, 1, order_by = c(Iteration)),
+#     gSellers = nSellers - lag(nSellers, 1, order_by = c(Iteration)) + lag(Sales, 1, order_by = c(Iteration))
+#   ) %>%
+#   summarise(tBuyers = sum(gBuyers),
+#             tSellers = sum(gSellers))
+# 
+# ggplot(iteration_stats_summary) +
+#   geom_point(aes(x = Run, y = tBuyers, color = Realtor)) +
+#   facet_grid(rows = vars(LagPlay))
 
 
 

@@ -587,12 +587,12 @@ setMethod("matchMake",
 
 
 setGeneric("updateMarketAverages",
-           function(realtor) {
+           function(realtor,buyers,sellers) {
              standardGeneric("updateMarketAverages")
            })
 setMethod("updateMarketAverages",
-          signature("Realtor"),
-          function(realtor) {
+          signature("Realtor","list","list"),
+          function(realtor,buyers,sellers) {
             ## Create Place-holders for the averages
             ## Since I stored the data in a (suboptimal) way, I need to loop
             ## Through it all ....
@@ -600,6 +600,10 @@ setMethod("updateMarketAverages",
             ## Would undo the condensed formatting I have it all in in the data.frames and expand it out
             ## to make better use of R's vectorization
             ## Honestly, there will seldom be even 100 buyers or sellers for a realtor to manage so .. this may not be that bad
+            
+            ## Rearange and clean for multiple uses: internal buyer updating and external
+            ## or just make it external.
+            
             
             b_pref_av <- rep(0, 6)
             b_fuzzy_av <- list(
@@ -619,15 +623,15 @@ setMethod("updateMarketAverages",
             ## inside these loops, loop the list of Fuzzy requirements
             ## Then loop the final fuzzy requiremetns to get their averages
             
+            
             ## For Buyer Preferences & Fuzziness
-            if (nrow(realtor@Buyers) > 0) {
-              for (b in 1:nrow(realtor@Buyers)) {
-                buyer <- realtor@Buyers[b, ]
+            if (nrow(buyers) > 0) {
+              for (buyer in buyers) {
                 b_pref_av <-
-                  b_pref_av + as.numeric(buyer$Preferences[[1]])
+                  b_pref_av + as.numeric(buyer$Preferences)
                 for (item in names(b_fuzzy_av)) {
                   b_fuzzy_av[[item]] <-
-                    sumRequirements(b_fuzzy_av[[item]], buyer$Fuzziness[[1]][[item]])
+                    sumRequirements(b_fuzzy_av[[item]], attr(buyer,item))
                 }
               }
               #Average each preference
@@ -643,14 +647,13 @@ setMethod("updateMarketAverages",
             }
             
             ## For seller Preferences & Fuzziness
-            if (nrow(realtor@Sellers) > 0) {
-              for (s in 1:nrow(realtor@Sellers)) {
-                seller <- realtor@Sellers[s, ]
+            if (nrow(sellers) > 0) {
+              for (seller in sellers) {
                 s_pref_av <-
-                  s_pref_av + as.numeric(seller$Preferences[[1]])
+                  s_pref_av + as.numeric(seller@Preferences)
                 for (item in names(s_fuzzy_av)) {
                   s_fuzzy_av[[item]] <-
-                    sumRequirements(s_fuzzy_av[[item]], seller$Fuzziness[[1]][[item]])
+                    sumRequirements(s_fuzzy_av[[item]], attr(seller,item))
                 }
               }
               #Average each preference

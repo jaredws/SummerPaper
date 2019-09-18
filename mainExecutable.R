@@ -211,7 +211,13 @@ main <-
           ## There may be 'reapeat discoveries'
           ## Since some houses get updated on their price, this should be fine
           if (RANDOM) {
-            houses <- sample_n(r@Houses, 3, replace = FALSE) %>%
+            n <- 3;
+            if(r@Name == "RandomDraw5"){
+              n <- 5;
+            }
+            n <- min(n,nrow(r@Houses))
+            
+            houses <- sample_n(r@Houses, n, replace = FALSE) %>%
               select(Address,
                      Price,
                      Beds,

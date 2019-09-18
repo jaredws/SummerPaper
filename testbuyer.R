@@ -29,7 +29,8 @@ John <- Buyer(
   Realtor = "Torterella",
   Clarity = 2,
   Responsiveness = 1,
-  TimeCurrent = 1
+  TimeCurrent = 1,
+  PlayLag = 0
 )
 
 Torterella <- Realtor(

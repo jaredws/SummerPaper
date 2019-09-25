@@ -15,46 +15,49 @@ generateSellers <- function(t,
                             clarity,
                             seller_params,
                             fuzzy_param,
+                            n_Sellers,
                             seed = NULL) {
-  ## Number of sellers to add
-  if(!is.null(seed)){
-    set.seed(seed)
-  }
-  listings <-
-    filter(house_data, Event == "Listed for sale") %>%
-    select(Address,
-           Price,
-           Beds,
-           Baths,
-           SqrFt,
-           LotSize,
-           Date,
-           Time,
-           RollTimeAv,
-           Event) %>%
-    arrange(Date)
-  n_Sellers <- min(max(floor(rnorm(1, 6, 2)),0), nrow(listings))
   sellers <- list()
   if (n_Sellers > 0) {
+    if (!is.null(seed)) {
+      set.seed(seed)
+    }
+    listings <-
+      dplyr::filter(house_data, Event == "Listed for sale") %>%
+      dplyr::select(Address,
+             Price,
+             Beds,
+             Baths,
+             SqrFt,
+             LotSize,
+             Date,
+             Time,
+             RollTimeAv,
+             Event) %>%
+      arrange(Date)
+    
+    
+    
     house_draws <- dplyr::sample_n(
       tbl = listings,
       size = n_Sellers,
-      replace = FALSE,
-      weight = 1 / (Time - t + 1)
+      replace = FALSE
     )
     
     
     for (r in 1:nrow(house_draws)) {
-      entry <- house_draws[r,]
+      entry <- house_draws[r, ]
       realtorName <- realtorNames[runif(1, 1, length(realtorNames))]
       pref <-
-        c(
-          abs(rnorm(
+        c(abs(
+          rnorm(
             1,
             mean = seller_params$Price$Mean,
             sd = seller_params$Price$Stdev
-          )),
-          abs(rnorm(1, mean = seller_params$Time$Mean, sd = seller_params$Time$Stdev)
+          )
+        ),
+        abs(
+          rnorm(1, mean = seller_params$Time$Mean, sd = seller_params$Time$Stdev)
         ))
       pref <- pref / norm(as.matrix(pref, nrow = 1))
       
@@ -64,7 +67,7 @@ generateSellers <- function(t,
       )
       
       s <- Seller(
-        Name = paste("S",t,r),
+        Name = paste("S", t, r),
         Price = Requirement(
           entry$Price * fuzzy[1],
           entry$Price,
@@ -89,7 +92,10 @@ generateSellers <- function(t,
         Realtor = realtorName,
         ## The name of the Realtor the Seller is working with
         TimeCurrent = t,
-        PriceIncreases = as.data.frame(matrix(nrow = 0, ncol = 2), col.names = c("Iteration", "NumberEqualOffers"))
+        PriceIncreases = as.data.frame(
+          matrix(nrow = 0, ncol = 2),
+          col.names = c("Iteration", "NumberEqualOffers")
+        )
       )
       
       house <- as.data.frame(
@@ -100,7 +106,9 @@ generateSellers <- function(t,
           "Baths" = as.numeric(entry$Baths),
           "SqrFt" = as.numeric(entry$SqrFt),
           "LotSize" = as.numeric(entry$LotSize),
-          "Time" = as.numeric(mean(c(s@Time@core1, s@Time@core2)))
+          "Time" = as.numeric(mean(c(
+            s@Time@core1, s@Time@core2
+          )))
         )
       )
       s@House <- house
@@ -109,7 +117,7 @@ generateSellers <- function(t,
     }
     ## Remove the drawn houses from the pool
     listings_remain <-
-      anti_join(house_data, house_draws, by = c("Address","Event"))
+      anti_join(house_data, house_draws, by = c("Address", "Event"))
   }
   
   else{
@@ -128,58 +136,67 @@ generateBuyers <- function(t,
                            responsiveness,
                            buyer_params,
                            fuzzy_param,
+                           n_Buyers,
                            seed = NULL) {
-  
-  if(!is.null(seed)){
-    set.seed(seed)
-  }
-  
-  ## Only sample the sales
-  sales <- filter(house_data, Event == "Sold") %>%
-    select(Address,
-           Price,
-           Beds,
-           Baths,
-           SqrFt,
-           LotSize,
-           Date,
-           Time,
-           RollTimeAv,
-           Event) %>%
-    arrange(Date)
-  
-  ## Number buyers to add
-  n_Buyers <- min(max(floor(rnorm(1, 6, 2)),0) , nrow(sales))
   buyers <- list()
   if (n_Buyers > 0) {
-  
+    if (!is.null(seed)) {
+      set.seed(seed)
+    }
+    
+    ## Only sample the sales
+    sales <- dplyr::filter(house_data, Event == "Sold") %>%
+      dplyr::select(Address,
+             Price,
+             Beds,
+             Baths,
+             SqrFt,
+             LotSize,
+             Date,
+             Time,
+             RollTimeAv,
+             Event) %>%
+      arrange(Date)
+    
+    
+    
+    
     ## Draw again with replacement and similiar weighting for the buyer's
     buyer_draws <- dplyr::sample_n(
       tbl = sales,
       size = n_Buyers,
-      replace = TRUE,
-      weight = 1 / (Time - t + 1)
+      replace = TRUE
     )
-
+    
     
     ## Now the buyers
     
     for (r in 1:nrow(buyer_draws)) {
-      entry <- buyer_draws[r,]
+      entry <- buyer_draws[r, ]
       realtorName <- realtorNames[runif(1, 1, length(realtorNames))]
       
-      pref = c(
-        abs(rnorm(1, buyer_params$Price$Mean, buyer_params$Price$Stdev)),
-        abs(rnorm(1, buyer_params$Beds$Mean, buyer_params$Beds$Stdev)),
-        abs(rnorm(1, buyer_params$Baths$Mean, buyer_params$Baths$Stdev)),
-        abs(rnorm(1, buyer_params$SqrFt$Mean, buyer_params$SqrFt$Stdev)),
-        abs(rnorm(
+      pref = c(abs(
+        rnorm(1, buyer_params$Price$Mean, buyer_params$Price$Stdev)
+      ),
+      abs(
+        rnorm(1, buyer_params$Beds$Mean, buyer_params$Beds$Stdev)
+      ),
+      abs(
+        rnorm(1, buyer_params$Baths$Mean, buyer_params$Baths$Stdev)
+      ),
+      abs(
+        rnorm(1, buyer_params$SqrFt$Mean, buyer_params$SqrFt$Stdev)
+      ),
+      abs(
+        rnorm(
           1,
           buyer_params$LotSize$Mean,
           buyer_params$LotSize$Stdev
-        )),
-        abs(rnorm(1, buyer_params$Time$Mean, buyer_params$Time$Stdev))
-      )
+        )
+      ),
+      abs(
+        rnorm(1, buyer_params$Time$Mean, buyer_params$Time$Stdev)
+      ))
       # Normalize to 1
       pref <- pref / norm(as.matrix(pref, nrow = 1))
       
@@ -195,10 +212,10 @@ generateBuyers <- function(t,
       ## in both cases where the buyer goes through a realtor and the buyer does not
       
       # Time Core 2
-      tcore2 = max(rnorm(1,12*7, 7),7)
+      tcore2 = max(rnorm(1, 12 * 7, 7), 7)
       
       b <- Buyer(
-        Name = paste("B",t,r),
+        Name = paste("B", t, r),
         Price = Requirement(
           entry$Price * fuzzy[1],
           entry$Price,
@@ -229,7 +246,7 @@ generateBuyers <- function(t,
           entry$LotSize,
           entry$LotSize * fuzzy[2]
         ),
-        Time = Requirement(t* fuzzy[1],
+        Time = Requirement(t * fuzzy[1],
                            t + 7,
                            t + tcore2,
                            (t + tcore2) * fuzzy[2]),
@@ -247,19 +264,19 @@ generateBuyers <- function(t,
         Clarity = clarity,
         Responsiveness = responsiveness,
         TimeCurrent = t,
-        PlayLag = t + floor(rexp(1,1/4)) ## Here we want the floor to allow immediate play
+        PlayLag = t + floor(rexp(1, 1 / 4)) ## Here we want the floor to allow immediate play
       )
       buyers[[b@Name]] <- b
     }
     ## Remove the drawn houses from the pool
     listings_remain <-
-      anti_join(house_data, buyer_draws, by = c("Address","Event"))
+      anti_join(house_data, buyer_draws, by = c("Address", "Event"))
     
   }
   else{
     listings_remain <- house_data
   }
-
+  
   return (list("BuyerList" = buyers, "HouseData" = listings_remain))
 }
 

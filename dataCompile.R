@@ -10,10 +10,10 @@ library(tidyverse)
 theme_set(theme_bw())
 
 
-runNames <- c("MaxProfit","NoRealtor", "PerfectInfo", "RandomDraw5")
+runNames <- c("MaxProfit", "PerfectInfo")#, "RandomDraw5","NoRealtor")
 randomness <- list("MaxProfit" == FALSE, "RandomDraw5" = TRUE,"NoRealtor" = TRUE, "PerfectInfo" = FALSE)
 lagPlay <- c(TRUE, FALSE)
-iterations <- 50
+iterations <- 100
 
 realizedData <- list()
 
@@ -39,12 +39,12 @@ for (lag in lagPlay) {
       
         executing <- paste0(version, "_", lag, "_", run)
         fileName <-
-          paste0("/usa/jaredws/", executing, "_realizedData.RData")
+          paste0("/usa/jaredws/", executing, "_realizedData_newDraws.RData")
         
         ## Download the output data
         scp_download(session, fileName)
         
-        load(paste0(getwd(), "/", executing, "_realizedData.RData"))
+        load(paste0(getwd(), "/", executing, "_realizedData_newDraws.RData"))
         
         cnames <- names(realizedData[[4]])
         cnames[4] <- "TotalCommission"
@@ -80,17 +80,20 @@ for (lag in lagPlay) {
 ssh_disconnect(session)
 
 save(iteration_stats_compiled,
-     file = paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
+     file = paste0(getwd(), "/iteration_stats_compiled_raw_newDraws.RData"))
 save(house_sales_compiled,
-     file = paste0(getwd(), "/house_sales_compiled_raw.RData"))
+     file = paste0(getwd(), "/house_sales_compiled_raw_newDraws.RData"))
 
-load(paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
+#load(paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
 
 #### Clean and Organize the Data ####
 
+load(paste0(getwd(), "/iteration_stats_compiled_raw_newDraws.RData"))
+load(paste0(getwd(), "/house_sales_compiled_raw_newDraws.RData"))
+
+
 load(paste0(getwd(), "/iteration_stats_compiled_raw.RData"))
 load(paste0(getwd(), "/house_sales_compiled_raw.RData"))
-
 
 ## Rename PerfectInfo as MaxSatisfaction Realtor
 levels(house_sales_compiled$Realtor) <- c("MaxProfit", "RandomDraw3", "MaxSatisfaction", "RandomDraw5")
@@ -111,9 +114,8 @@ house_sales_compiled %>%
 ## Let's put TimeOnMarket and Average Bid (SalePrice) into the Iteration stats
 ## Take an average across any sales that occured
 house_sales_av_ToM <- house_sales_compiled %>%
-  ungroup() %>%
-  group_by(Realtor, LagPlay, Run, Iteration) %>%
-  summarise(
+  dplyr::group_by(Realtor, LagPlay, Run, Iteration) %>%
+  dplyr::summarise(
     av_Iter_ToM = mean(TimeOnMarket, na.rm = TRUE),
     av_SalePrice = mean(Bid, na.rm = TRUE)
   ) %>%
@@ -276,6 +278,8 @@ y <-
          Realtor == "MaxSatisfaction",
          LagPlay == "LagPlay")$Sales
 t.test(x, y)
+
+
 ## Play every round
 x <-
   filter(iteration_stats_compiled,

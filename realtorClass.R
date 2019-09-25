@@ -389,6 +389,10 @@ setMethod("matchMake",
             ## Weight Appropriatness values by expected sale price
             ## inform all Buyers of 3 top choices for them,
             ## There may be overlap, Realtor may learn to create competition
+            
+            if(nrow(realtor@Sellers) == 0 || nrow(realtor@Buyers)==0){
+              return (realtor)
+            }
 
             for (b in 1:nrow(realtor@Buyers)) {
               byr <- realtor@Buyers[b,]

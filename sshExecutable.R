@@ -14,45 +14,55 @@ source("realtorClass.R")
 source("sellerClass.R")
 source("generateBuyersAndSellers.R")
 source("mainExecutable.R")
-
 seedList <- read.csv("seedList.csv", col.names = c("Run", "Seed"))
+print(paste("Options for runNames:","NoRealtor", "PerfectInfo", "MaxProfit", "RandomDraw5"))
+print(paste("Options for lagPlay: True, False"))
 
-runNames <- c("RandomDraw5")
-randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE, "MaxProfit" = FALSE, "RandomDraw5" = TRUE)
-lagPlay <- c(TRUE,FALSE)
-iterations <- 50
 
-realizedData <- list()
-
-RUNS <- seq(1,20)
-
-for (lag in lagPlay) {
-  for (version in runNames) {
-    for (run in RUNS) {
-      run <- as.numeric(run)
-      ## Name the index in the list as the type of run
-      ## Example:
-      ## NoRealtor_TRUE_1
-      ## Would be the first run of the NoRealtor version, with lagPlay active
-      
-      executing <- paste0(version, "_", lag, "_", run)
-      print(paste0("Now running: ",executing))
-      
-      ## This is going to get large ... very fast
-      ## I may want to write to disk more often, but we will see...
-      realizedData <-
-        main(ITERATIONS = iterations,
-             SEED = seedList[run, "Seed"],
-             RANDOM = randomness[[version]], ## Randomness depends on the version.
-             LAGPLAY = lag,
-             RUN_NAME = version)
-      
-      fileName <- paste0(executing,"_realizedData.RData")
-      
-      save(realizedData, file = eval(fileName))
+sshExecute <-
+  function(runNames = c("NoRealtor", "PerfectInfo", "MaxProfit", "RandomDraw5"),
+           lagPlay = c(TRUE, FALSE),
+           iterations = 100,
+           RUNS = seq(1, 20)) {
+    realizedData <- list()
+    randomness <-
+      list(
+        "NoRealtor" = TRUE,
+        "PerfectInfo" = FALSE,
+        "MaxProfit" = FALSE,
+        "RandomDraw5" = TRUE
+      )
+    for (lag in lagPlay) {
+      for (version in runNames) {
+        for (run in RUNS) {
+          run <- as.numeric(run)
+          ## Name the index in the list as the type of run
+          ## Example:
+          ## NoRealtor_TRUE_1
+          ## Would be the first run of the NoRealtor version, with lagPlay active
+          
+          executing <- paste0(version, "_", lag, "_", run)
+          print(paste0("Now running: ", executing))
+          
+          ## This is going to get large ... very fast
+          ## I may want to write to disk more often, but we will see...
+          realizedData <-
+            main(
+              ITERATIONS = iterations,
+              SEED = seedList[run, "Seed"],
+              RANDOM = randomness[[version]],
+              ## Randomness depends on the version.
+              LAGPLAY = lag,
+              RUN_NAME = version
+            )
+          
+          fileName <- paste0(executing, "_realizedData_newDraws.RData")
+          
+          save(realizedData, file = eval(fileName))
+        }
+      }
     }
   }
-}
 
 ## Note: each execution of the system returns a list of the form:
 # RETURN <- list(

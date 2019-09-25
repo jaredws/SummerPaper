@@ -26,7 +26,7 @@ main <-
     ## Still some data cleaning around prices and organizing
     ## Will do that later
     dataToDraw <- read.csv("dataToDraw.csv")
-    dataToDraw <- filter(dataToDraw, Price <= 500000)
+    #dataToDraw <- dplyr::filter(dataToDraw, Price <= 500000)
     ## Be sure date is in the proper format
     dataToDraw$Date <- as.Date.factor(dataToDraw$Date)
     dataToDraw$SqrFt <- as.numeric(dataToDraw$SqrFt)
@@ -62,6 +62,10 @@ main <-
       "Time" = list("Mean" =  0.25, "Stdev" = 0.08),
       "MinQoS" = seller_params$MinQoS ## For simplicity
     )
+    
+    
+    buyer_prob <- as.data.frame(read.csv("saleFrequency.csv"))
+    seller_prob <- as.data.frame(read.csv("listingFrequency.csv"))
     
     BuyerList_noRealtor <- list()
     SellerList_noRealtor <- list()
@@ -126,25 +130,42 @@ main <-
       ## since names are generated using ComputerTimeStamps as strings for simplicity,
       ## and are thus unique, there is no need to worry about overwritting
       
+      ## Generate sellers from the given data distribution
+      n <- runif(1,0,1)
+      n_Sellers <- seller_prob %>%
+        dplyr::filter(High >= n) %>%
+        dplyr::filter(Low <= n) %>%
+        dplyr::summarise(toGen = min(ListingsToday))
+      
+      n <- runif(1,0,1)
+      n_Buyers <- buyer_prob %>%
+        dplyr::filter(High >= n) %>%
+        dplyr::filter(Low <= n) %>%
+        dplyr::summarise(toGen = min(SalesToday))
+      
+      
       genBuyers <-
         generateBuyers(
-          t,
-          names(RealtorList_noRealtor),
-          dataToDraw,
-          Clarity,
-          Responsiveness,
-          buyer_params,
-          fuzzy_param
+          t = t,
+          realtorNames = names(RealtorList_noRealtor),
+          house_data = dataToDraw,
+          clarity = Clarity,
+          responsiveness = Responsiveness,
+          buyer_params =buyer_params,
+          fuzzy_param = fuzzy_param,
+          n_Buyers = as.numeric(n_Buyers)
         )
       dataToDraw <- genBuyers[[2]]
+      
       genSellers <-
         generateSellers(
-          t,
-          names(RealtorList_noRealtor),
-          dataToDraw,
-          Clarity,
-          seller_params,
-          fuzzy_param
+          t = t,
+          realtorNames = names(RealtorList_noRealtor),
+          house_data = dataToDraw,
+          clarity = Clarity,
+          seller_params = seller_params,
+          fuzzy_param = fuzzy_param,
+          n_Sellers = as.numeric(n_Sellers)
         )
       dataToDraw <- genSellers[[2]]
       
@@ -181,8 +202,19 @@ main <-
             r <- informRealtorFromSeller(r, s, inform)
           }
         
+        ## if there are no houses for sale, loop again
+        if (RANDOM && nrow(r@Houses) == 0) {
+          RealtorsRunning[[r@Name]] <- r
+          break
+        }
+        
         # 2.2 Matchmake
         if (!RANDOM) {
+          if(nrow(r@Sellers) == 0 || nrow(r@Buyers) == 0){
+            ## if there are no matches, just loop again, everyone will have their time updated when necessary
+            RealtorsRunning[[r@Name]] <- r
+            break
+          }
           r <- matchMake(r)
           if (nrow(r@BuyerHouseMatch) == 0) {
             ## if there are no matches, just loop again, everyone will have their time updated when necessary
@@ -218,7 +250,7 @@ main <-
             n <- min(n,nrow(r@Houses))
             
             houses <- sample_n(r@Houses, n, replace = FALSE) %>%
-              select(Address,
+              dplyr::select(Address,
                      Price,
                      Beds,
                      Baths,
@@ -228,17 +260,17 @@ main <-
           }
           
           if (r@Name == "PerfectInfo") {
-            houses <- filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
+            houses <- dplyr::filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
               arrange(desc(TimeStamp), desc(Buyer_AV)) %>%
-              select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
+              dplyr::select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
           }
           ## Else, sort descending by Buyer Value to max profit
           if (r@Name == "MaxProfit") {
-            houses <- filter(r@BuyerHouseMatch, 
+            houses <- dplyr::filter(r@BuyerHouseMatch, 
                              Buyer == b@Name,
                              Buyer_AV >= b@MinQoS) %>%
               arrange(desc(TimeStamp), desc(Buyer_Value)) %>%
-              select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
+              dplyr::select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
           }
           ## Only inform on the top 3
           ## Gain information every turn, even if no action is taken
@@ -255,7 +287,8 @@ main <-
               "LotSize",
               "Time")
           
-          ## Always inform buyer's of new houses for sale
+          ## Always inform buyer's of new houses for sale, if any
+          
           b <- informBuyer(b, houses)
           
           ## If the buyer is not acting this turn.
@@ -298,7 +331,7 @@ main <-
               next
             }
             s <-
-              informSeller(s, filter(
+              informSeller(s, dplyr::filter(
                 r@NewOffers,
                 as.character(s@House$Address) == Address
               ))
@@ -412,7 +445,7 @@ main <-
               
               ## Go through each Buyer's dataset and drop houses that are no longer on the market
               buyerNotify <- r@BuyerHouseMatch %>%
-                filter(Address == as.character(s@House$Address))
+                dplyr::filter(Address == as.character(s@House$Address))
               buyerNotify <- as.list(buyerNotify$Buyer)
               for (b in buyerNotify) {
                 b <- as.character(b)

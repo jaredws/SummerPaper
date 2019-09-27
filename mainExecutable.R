@@ -348,11 +348,23 @@ main <-
                 ## Need to add these houses to another dataset and the realtor must be notified to update the buyers
                 ## Could re-use the code for removing houes from buyers
                 ## and simply re-match on the next iteration
-                #print(paste("Price Increase on", s@House$Address))
+                
                 inform <- informRealtor(s)
                 r <- informRealtorFromSeller(r, s, inform)
                 SellersRunning[[s@Name]] <- s
                 priceIncreases <- priceIncreases + 1
+                
+                ## Go through each Buyer's dataset and drop houses that are at a higher price
+                buyerNotify <- r@BuyerHouseMatch %>%
+                  dplyr::filter(Address == as.character(s@House$Address))
+                buyerNotify <- as.list(buyerNotify$Buyer)
+                for (b in buyerNotify) {
+                  b <- as.character(b)
+                  BuyerList_noRealtor[[b]] <-
+                    removeHouse(BuyerList_noRealtor[[b]],
+                                as.character(s@House$Address))
+                }
+                
                 next
               }
               

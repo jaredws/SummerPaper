@@ -120,12 +120,11 @@ setMethod("acceptOffer",
               ## Since all of the AV's and the Prices are the 'best' we know we need to increase the price
               seller@AcceptedOffer <- as.data.frame("Price Increase")
               ## Arbitrairily raise the price by 5%
-              seller@House$Price <- seller@House$Price * 1.05
-              ## Don't need to update the Seller's desired Price since she is always
-              ## looking for a higher price
+              seller@House$Price <- seller@House$Price * ( 1 + 0.05)
+              seller@Price <- percentIncrease(seller@Price,0.05)
               ## I am assuming that a house will not drop in listed value in this scenario ..
               ## Future research may be able to add this feature
-              ## TODO?
+
               entry <- list("Iteration" = seller@TimeCurrent, "NumberEqualOffers" = nrow(bestOffers))
               
               seller@PriceIncreases <- rbind(seller@PriceIncreases,as.data.frame(entry))

@@ -103,7 +103,7 @@ levels(iteration_stats_compiled$Realtor) <- c("MaxProfit", "RandomDraw3", "MaxSa
 ## "MaxProfit"   "NoRealtor"   "PerfectInfo"
 
 house_sales_compiled %>%
-  group_by(Realtor, LagPlay) %>%
+  dplyr::group_by(Realtor, LagPlay) %>%
   summarise(
     mean(BuyerSatisfaction),
     mean(SellerSatisfaction),
@@ -119,12 +119,12 @@ house_sales_av_ToM <- house_sales_compiled %>%
     av_Iter_ToM = mean(TimeOnMarket, na.rm = TRUE),
     av_SalePrice = mean(Bid, na.rm = TRUE)
   ) %>%
-  arrange(Realtor, LagPlay, Run, Iteration) %>%
-  select(Realtor, LagPlay, Run, Iteration, av_Iter_ToM, av_SalePrice)
+  dplyr::arrange(Realtor, LagPlay, Run, Iteration) %>%
+  dplyr::select(Realtor, LagPlay, Run, Iteration, av_Iter_ToM, av_SalePrice)
 
 iteration_stats_compiled <- iteration_stats_compiled %>%
-  group_by(Realtor, LagPlay, Run) %>%
-  arrange(Realtor, LagPlay, Run, Iteration) %>%
+  dplyr::group_by(Realtor, LagPlay, Run) %>%
+  dplyr::arrange(Realtor, LagPlay, Run, Iteration) %>%
   inner_join(house_sales_av_ToM,
             by = c("Realtor", "LagPlay", "Run", "Iteration"))
 
@@ -150,7 +150,7 @@ iteration_stats_compiled <- iteration_stats_compiled %>%
 
 iteration_stats_Iter_Averages <- iteration_stats_compiled %>%
   ungroup() %>%
-  group_by(Realtor, LagPlay, Iteration) %>%
+  dplyr::group_by(Realtor, LagPlay, Iteration) %>%
   mutate(
     iter_av_Sales = mean(Sales),
     iter_av_Offers = mean(Offers),
@@ -160,8 +160,8 @@ iteration_stats_Iter_Averages <- iteration_stats_compiled %>%
 
 ## Find 99% Confidence Intervals for the Total Commission plots
 commissionCI <- iteration_stats_compiled %>%
-  select(Realtor, LagPlay, Run, Iteration, TotalCommission) %>%
-  group_by(Realtor, LagPlay, Iteration) %>%
+  dplyr::select(Realtor, LagPlay, Run, Iteration, TotalCommission) %>%
+  dplyr::group_by(Realtor, LagPlay, Iteration) %>%
   summarise(
     TC_mean = mean(TotalCommission),
     TC_stdev = sqrt(var(TotalCommission)),
@@ -174,16 +174,16 @@ commissionCI <- iteration_stats_compiled %>%
 ## Commparing Rolling number of offers to rolling number of Sales
 ## need to gather on rollSales and rollOffers to get a comparable plot
 iteration_stats_rollGather <- iteration_stats_compiled %>%
-  group_by(Realtor, LagPlay, Run) %>%
+  dplyr::group_by(Realtor, LagPlay, Run) %>%
   gather(rollOffers, rollSales, key = "rollStatType", value = "rollStatValue") %>%
-  group_by(Realtor, LagPlay, Run, rollStatType) %>%
+  dplyr::group_by(Realtor, LagPlay, Run, rollStatType) %>%
   mutate(rollTrend = (rollStatValue - min(rollStatValue))/ (max(rollStatValue) - min(rollStatValue)))
 
 
 house_sales_Iter_Averages <- house_sales_compiled %>%
   ungroup() %>%
   #filter(Run < 2) %>%
-  group_by(Realtor, LagPlay, Iteration) %>%
+  dplyr::group_by(Realtor, LagPlay, Iteration) %>%
   mutate(
     iter_av_SellerSatisfaction = mean(SellerSatisfaction),
     iter_av_BuyerSatisfaction = mean(BuyerSatisfaction),
@@ -357,7 +357,8 @@ ggplot(iteration_stats_compiled) +
 
 ## Iteration average sale price
 ggplot(house_sales_Iter_Averages) +
-  geom_smooth(aes(x = Iteration, y = Price, color = Realtor)) +
+  #geom_smooth(aes(x = Iteration, y = Price, color = Realtor)) +
+  geom_point(aes(x = Iteration, y = Price, color = Realtor)) +
   facet_grid(rows = vars(LagPlay))
 ## Using the T test, we cannot see a statistical difference in the sale price between the two realtors
 # LagPlay

@@ -82,3 +82,23 @@ setMethod("averageRequirements",
             )
             return (result)
           })
+
+
+## Increase a requirement by a given percentage as a decimal
+setGeneric("percentIncrease",
+           function(req, num){
+             standardGeneric("percentIncrease")
+           }
+)
+setMethod("percentIncrease",
+          signature("Requirement","numeric"),
+          function(req, num){
+            num <- num + 1
+            result <- Requirement(
+              req@support1*num,
+              req@core1*num,
+              req@core2*num,
+              req@support2*num
+            )
+            return (req)
+          })

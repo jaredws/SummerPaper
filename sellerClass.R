@@ -82,12 +82,13 @@ setMethod("informSeller",
                 offer$Time_AV = seller@Preferences$Time * possibilityUndervaluation(time_FN, as.plFN(seller@Time))
                 
                 offer$AV = sum(offer$Price_AV, offer$Time_AV)
+  
                 
                 seller@CurrentOffers <-
                   rbind(seller@CurrentOffers, offer)
               }
               seller@CurrentOffers <-
-                seller@CurrentOffers %>% arrange(desc(Time)) %>% distinct(Buyer, .keep_all = TRUE)
+                seller@CurrentOffers %>% filter(AV >= seller@MinQoS) %>% arrange(desc(Time)) %>% distinct(Buyer, .keep_all = TRUE)
             }
             return(seller)
           })
@@ -104,7 +105,7 @@ setMethod("acceptOffer",
             ## and sort by their
             accept <- seller@CurrentOffers %>% arrange(desc(AV))
             bestAV <- max(seller@CurrentOffers$AV)
-            bestAVOffers <- seller@CurrentOffers %>% filter(AV == bestAV) %>% arrange(desc(AV))
+            bestAVOffers <- seller@CurrentOffers %>% filter(AV == bestAV) %>% arrange(desc(Bid))
             bestPrice <- max(seller@CurrentOffers$Bid)
             bestOffers <- bestAVOffers %>% filter(Bid == bestPrice) %>% arrange(desc(AV),desc(Bid))
             ## If multiple offers have the same AV, then we need to raise the price and reinform the realtor!
@@ -113,12 +114,17 @@ setMethod("acceptOffer",
               accept <-
                 accept[1, c("Time", "Buyer", "Address", "Bid", "AV")]
               seller@Satisfaction <- as.numeric(accept$AV)
+              seller@AcceptedOffer <- accept[1, c("Time", "Buyer", "Address", "Bid")]
             }
-            
+            ## If there are no Best Offers, we accept none.
+            else if(nrow(bestOffers) == 0){
+              seller@AcceptedOffer <- as.data.frame(NA)
+            }
+            ## Else, there must be multiple rows of best offers.
             else {
               ## Now check for Similiar AV then Price
               ## Since all of the AV's and the Prices are the 'best' we know we need to increase the price
-              seller@AcceptedOffer <- as.data.frame("Price Increase")
+              seller@AcceptedOffer <- bestOffers
               ## Arbitrairily raise the price by 5%
               seller@House$Price <- seller@House$Price * ( 1 + 0.05)
               seller@Price <- percentIncrease(seller@Price,0.05)
@@ -128,20 +134,8 @@ setMethod("acceptOffer",
               entry <- list("Iteration" = seller@TimeCurrent, "NumberEqualOffers" = nrow(bestOffers))
               
               seller@PriceIncreases <- rbind(seller@PriceIncreases,as.data.frame(entry))
-              return (seller)
             }
-            
-            ## If the current best offer does not meet MinQoS, do not accept
-            if (accept$AV < seller@MinQoS) {
-              seller@AcceptedOffer <- as.data.frame(NA)
-              return (seller)
-            }
-            else{
-              accept <-
-                accept[1, c("Time", "Buyer", "Address", "Bid")]
-            }
-            
-            seller@AcceptedOffer <- accept
+
             return(seller)
           })
 

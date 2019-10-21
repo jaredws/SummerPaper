@@ -84,14 +84,14 @@ setMethod("informRealtorFromBuyer",
             
             ## If clarity = 3, then the buyer & seller also informs us of prices
             pref <- inform$Preferences
-            if(is.null(pref)){
+            if (is.null(pref)) {
               pref <- realtor@Mkt_Av_Preferences_Buyers
             }
             minQoS <- inform$MinQoS
-            if(is.null(minQoS)){
+            if (is.null(minQoS)) {
               minQoS <- 0.8
             }
-     
+            
             entry <- data.frame(
               Name = buyer@Name,
               Price = I(list(c(inform$Price))),
@@ -103,9 +103,7 @@ setMethod("informRealtorFromBuyer",
               Fuzziness = I(list(c(
                 realtor@Mkt_Fuzziness_Buyers
               ))),
-              Preferences = I(list(c(
-                pref
-              ))),
+              Preferences = I(list(c(pref))),
               Offers = I(list(c(
                 list(
                   "Time" = "",
@@ -134,14 +132,14 @@ setMethod("informRealtorFromSeller",
           signature("Realtor", "Seller", "list"),
           function(realtor, seller, inform) {
             ## Called from informRealtor in the Seller Class
-
+            
             pref <- inform$Preferences
-            if(is.null(pref)){
+            if (is.null(pref)) {
               pref <- realtor@Mkt_Av_Preferences_Buyers
             }
             
             minQoS <- inform$MinQoS
-            if(is.null(minQoS)){
+            if (is.null(minQoS)) {
               minQoS <- 0.8
             }
             
@@ -152,9 +150,7 @@ setMethod("informRealtorFromSeller",
               Fuzziness = I(list(c(
                 realtor@Mkt_Fuzziness_Sellers
               ))),
-              Preferences = I(list(
-                c(pref)
-              )),
+              Preferences = I(list(c(pref))),
               House = seller@House$Address[[1]],
               Offers = I(list("")),
               EntryTime = as.numeric(realtor@TimeCurrent),
@@ -193,7 +189,7 @@ setMethod("getFeedback",
           function(realtor, client, random) {
             ## First, find the buyer in our list
             
-            if(nrow(client@CurrentOffer) ==0){
+            if (nrow(client@CurrentOffer) == 0) {
               return(realtor)
             }
             
@@ -209,7 +205,9 @@ setMethod("getFeedback",
               
               ## Append the new offer to existing offers
               buyerEntry$Offers[[1]] <-
-                append(buyerEntry$Offers, as.list(offer), after = length(buyerEntry$Offers))
+                append(buyerEntry$Offers,
+                       as.list(offer),
+                       after = length(buyerEntry$Offers))
               #offer_house <- as.data.frame(offer) %>%
               #  full_join(realtor@Houses, by = "Address")
               
@@ -221,7 +219,7 @@ setMethod("getFeedback",
                          Buyer == as.character(offer$Buyer))
                 
                 
-                bhmEntry <- arrange(bhmEntry, desc(TimeStamp))[1,]
+                bhmEntry <- arrange(bhmEntry, desc(TimeStamp))[1, ]
                 
                 ## To calculate the Offer's AV, we need to take a few things into account
                 ## No one will offer more than list price
@@ -240,10 +238,10 @@ setMethod("getFeedback",
                 realtor@BuyerHouseMatch <-
                   rbind(realtor@BuyerHouseMatch, bhmEntry) %>% dplyr::arrange(desc(Offer_Time)) %>% distinct(Buyer, Address, .keep_all = TRUE)
               }
-              realtor@NewOffers <- 
+              realtor@NewOffers <-
                 rbind(realtor@NewOffers, offer) %>% filter(Time >= realtor@TimeCurrent) %>% distinct(Buyer, .keep_all = TRUE)
               
-              # 
+              #
               # if (length(realtor@NewOffers) != 0) {
               #   realtor@NewOffers <-
               #     rbind(realtor@NewOffers, offer) %>% distinct(Buyer, .keep_all = TRUE)
@@ -251,7 +249,7 @@ setMethod("getFeedback",
               # else {
               #   realtor@NewOffers <- offer
               # }
-              # 
+              #
               ## Cast to data.frame to regress and replace buyer Preferences
               ## buyer_offers <- as.data.frame(buyerEntry$Offers)
               
@@ -297,7 +295,7 @@ setMethod("getFeedback",
               #     for (w in 1:length(weights)) {
               #       ## Using the mean to signify low or high values
               #       ## Using 0.05 as an update parameter ... conveniently
-              #       
+              #
               #       ## When the prediced AV is less than the Offer AV,
               #       ## Increase the weight of the high Poss Vec items
               #       ## Decrease the weight of the low Poss Vec items
@@ -324,15 +322,15 @@ setMethod("getFeedback",
               #           #break
               #         }
               #       }
-              #       
+              #
               #       l <- l + 1
               #     }
-              #     
+              #
               #     ## normalize to 1
               #     weights <- weights / sqrt(sum(weights ^ 2))
               #     ## Recalculate
               #     pred_AV <- weights %*% possVec
-              #     
+              #
               #   }
               #   weight_list <- as.list(weights)
               #   names(weight_list) <-
@@ -390,35 +388,38 @@ setMethod("matchMake",
             ## inform all Buyers of 3 top choices for them,
             ## There may be overlap, Realtor may learn to create competition
             
-            if(nrow(realtor@Sellers) == 0 || nrow(realtor@Buyers)==0){
+            if (nrow(realtor@Sellers) == 0 ||
+                nrow(realtor@Buyers) == 0) {
               return (realtor)
             }
-
+            
             for (b in 1:nrow(realtor@Buyers)) {
-              byr <- realtor@Buyers[b,]
+              byr <- realtor@Buyers[b, ]
               
               ## Columns 2-7 are the requirements
               ## Column 8 Fuzziness
               ## 9 Preferences
               
-              #filter(Price <= byr$Price[[1]][[1]] * byr$Fuzziness[[1]]$Price@support2) %>%
+              
+              ## Create the Buyer's Price Fuzzy Number
+              byr_price_fn <-
+                realtorGuess(byr$Price[[1]], byr$Fuzziness[[1]]$Price)
+              
               houses <- realtor@Houses %>%
                 select(Address, Price, Beds, Baths, SqrFt, LotSize) %>%
-                filter(Price <= byr$Price[[1]][[1]] * (byr$Fuzziness[[1]]$Price@support2 + 0.1))
-              ## Even though the realtor knows the exact fuzziness of the buyer in my model, 
-              ## it is worthwhile to incrase the price fuzziness a little bit more given the 
-              ## Requirement/Preference strucutre I laid in.
+                filter(Price < byr_price_fn@a4)
+
               
-              if(nrow(houses) == 0){
-                ## If there no houses within the price range for this buyer, 
+              if (nrow(houses) == 0) {
+                ## If there no houses within the price range for this buyer,
                 ## jump to the next one
                 next
               }
-
+              
               buyerhousematch <-
                 as.data.frame((matrix(ncol = 20, nrow = 0)))
               for (h in 1:nrow(houses)) {
-                house <- houses[h, ]
+                house <- houses[h,]
                 buyerhousematchEntry <-
                   list(
                     "TimeStamp" = realtor@TimeCurrent,
@@ -440,8 +441,7 @@ setMethod("matchMake",
                 
                 seller_price_fn <-
                   realtorGuess(seller$Price[[1]], seller$Fuzziness[[1]]$Price)
-                byr_price_fn <-
-                  realtorGuess(byr$Price[[1]], byr$Fuzziness[[1]]$Price)
+
                 
                 ## Run recommendation calculations
                 for (req in names(realtor@Mkt_Av_Preferences_Buyers)) {
@@ -456,8 +456,7 @@ setMethod("matchMake",
                   ## While the seller wants a higher price, they still want Buyers to
                   ## be able to afford their house
                   if (req == "Price") {
-                    
-                    ## If the realtor evaluates how likely the buyer's price range 
+                    ## If the realtor evaluates how likely the buyer's price range
                     ## is below the seller's price range as part of the likelihood of sale,
                     ## then there are often missed opportunities of buyer valuation
                     ## In early tests, this hindered numbers of sales as only buyers and sellers
@@ -485,15 +484,20 @@ setMethod("matchMake",
                       realtorGuess(byr[[req]][[1]], byr$Fuzziness[[1]][[req]])
                     s_FN <-
                       realtorGuess(seller[[req]][[1]], seller$Fuzziness[[1]][[req]])
-                    now_FN <- 
-                      PiecewiseLinearFuzzyNumber(realtor@TimeCurrent,realtor@TimeCurrent,realtor@TimeCurrent,realtor@TimeCurrent)
+                    now_FN <-
+                      PiecewiseLinearFuzzyNumber(
+                        realtor@TimeCurrent,
+                        realtor@TimeCurrent,
+                        realtor@TimeCurrent,
+                        realtor@TimeCurrent
+                      )
                     
                     poss_b_s = possibilityUndervaluation(b_FN, s_FN)
                     poss_n_s = possibilityUndervaluation(now_FN, s_FN)
                     poss_n_b = possibilityUndervaluation(now_FN, b_FN)
                     
-                    poss_s = max(poss_b_s,poss_n_s)
-                    poss_b = max(poss_b_s,poss_n_b)
+                    poss_s = max(poss_b_s, poss_n_s)
+                    poss_b = max(poss_b_s, poss_n_b)
                     AV_buyer <-
                       AV_buyer + byr$Preferences[[1]][[req]] * poss_b
                     AV_seller <-
@@ -523,33 +527,34 @@ setMethod("matchMake",
                 ## will investigate other numbers in the future
                 
                 buyer_value  <-
-                  min( (AV_buyer) * byr_price_fn@a3,
-                       byr_price_fn@a4)
+                  min((AV_buyer) * byr_price_fn@a3,
+                      byr_price_fn@a4)
                 bid = min(house$Price, buyer_value)
                 
-                byr_bid_fn <- PiecewiseLinearFuzzyNumber(bid,bid,bid,bid)
+                byr_bid_fn <-
+                  PiecewiseLinearFuzzyNumber(bid, bid, bid, bid)
                 poss = possibilityExceedance(byr_bid_fn, seller_price_fn)
                 AV_seller <-
                   AV_seller + seller$Preferences[[1]][["Price"]] * poss
                 
-                if(AV_seller < seller$MinQoS){
+                if (AV_seller < seller$MinQoS) {
                   next
                 }
-
+                
                 #if(AV_buyer >= byr$MinQoS && AV_seller >= seller$MinQoS){
-
-                  buyerhousematchEntry$Buyer_AV <- AV_buyer
-                  buyerhousematchEntry$Buyer_Value = buyer_value
-                  buyerhousematchEntry$Estimated_Bid = as.numeric(bid)
-                  buyerhousematchEntry$Seller_AV <- AV_seller
-                  
-                  buyerhousematchEntry_DF <-
-                    as.data.frame(buyerhousematchEntry)
-                  
-                  buyerhousematch <-
-                    rbind(buyerhousematch, buyerhousematchEntry_DF)
+                
+                buyerhousematchEntry$Buyer_AV <- AV_buyer
+                buyerhousematchEntry$Buyer_Value = buyer_value
+                buyerhousematchEntry$Estimated_Bid = as.numeric(bid)
+                buyerhousematchEntry$Seller_AV <- AV_seller
+                
+                buyerhousematchEntry_DF <-
+                  as.data.frame(buyerhousematchEntry)
+                
+                buyerhousematch <-
+                  rbind(buyerhousematch, buyerhousematchEntry_DF)
                 #}
-                  
+                
                 ## So long as the seller's valuye is larger than her minimum support
                 ## and the expected bid is larger than or equal to the seller value,
                 ## The Realtor believes this transaction is possible
@@ -561,8 +566,8 @@ setMethod("matchMake",
               ## Now arrange them all by descending Estimated_Bid,
               ## and return only the top 3
               ## May parameterize the 3
-              if(nrow(buyerhousematch) <= 0){
-                ## If there no house matches for this buyer, 
+              if (nrow(buyerhousematch) <= 0) {
+                ## If there no house matches for this buyer,
                 ## jump to the next one
                 next
               }
@@ -570,10 +575,12 @@ setMethod("matchMake",
               buyerhousematch <- buyerhousematch %>%
                 arrange(desc(TimeStamp)) %>%
                 distinct(Buyer, Address, .keep_all = TRUE)
-            
+              
               
               realtor@BuyerHouseMatch <-
-                rbind(realtor@BuyerHouseMatch, buyerhousematch)
+                rbind(realtor@BuyerHouseMatch, buyerhousematch) %>%
+                arrange(desc(TimeStamp)) %>%
+                distinct(Buyer, Address, .keep_all = TRUE)
               
               realtor@Buyers[b, "UpdateTime"] <- realtor@TimeCurrent
               
@@ -586,17 +593,73 @@ setMethod("matchMake",
             ## In the step function or higher, update all the Realtor's Buyers on their Matches
           })
 
-## Update the current time
+
+
+## Function to price new houses
+setGeneric("priceHouse",
+           function(realtor, house, soldHouses, method) {
+             standardGeneric("priceHouse")
+           })
+setMethod("priceHouse",
+          signature("Realtor", "data.frame", "data.frame", "character"),
+          function(realtor, house, soldHouses, method) {
+            if (method == "Similarity") {
+              ## Evaluate the every buyer's BV for the house
+              ### Evaluate how similiar the house is to other houses using the market
+              ### Average Buyer Fuzziness
+              ### Use the similiarity value and sold houses to calculate the
+              ### expected sale price.
+              
+              comparison <- soldHouses[, "Bid"]
+              
+              for (h in 1:nrow(soldHouses)) {
+                comp_house <- soldHouses[h, c("Beds", "Baths", "SqrFt", "LotSize")]
+                
+                simVal <- 0
+                
+                for (attr in c("Beds", "Baths", "SqrFt", "LotSize")) {
+                  fuzzyDiff <- realtorGuess(given = house[1, attr],
+                                            belief = realtor@Mkt_Fuzziness_Buyer) - reatlorGuess(given = comp_house[1, attr],
+                                                                                                 belief = realtor@Mkt_Fuzziness_Buyer)
+                  
+                  simVal <- simVal + FuzzyNumbers::value(fuzzyDiff)
+                  
+                }
+                
+                comparison[h, "Similarity"] <- simVal
+              }
+              
+              comparison$Similarity <-
+                (comparison$Similarity - min(comparison$Similarity)) / (max(comparison$Similarity - min(comparison$Similarity)))
+              
+              value <- comparison[, 1] %*% t(comparison[, 2])
+              return (value)
+            }
+            
+            else if(method == "MaxSalePrice"){
+              
+              ## Using each buyer's right core price, 
+              ## Calculate the Buyer Value for every buyer
+              ## Assign the price that has the highest Buyer Value
+              
+            }
+            
+            
+            
+            
+          })
+
+
+
+
 ## Recalculate the Market Averages for Preferences and Fuzziness
-
-
 setGeneric("updateMarketAverages",
-           function(realtor,buyers,sellers) {
+           function(realtor, buyers, sellers) {
              standardGeneric("updateMarketAverages")
            })
 setMethod("updateMarketAverages",
-          signature("Realtor","list","list"),
-          function(realtor,buyers,sellers) {
+          signature("Realtor", "list", "list"),
+          function(realtor, buyers, sellers) {
             ## Create Place-holders for the averages
             ## Since I stored the data in a (suboptimal) way, I need to loop
             ## Through it all ....
@@ -635,7 +698,7 @@ setMethod("updateMarketAverages",
                   b_pref_av + as.numeric(buyer$Preferences)
                 for (item in names(b_fuzzy_av)) {
                   b_fuzzy_av[[item]] <-
-                    sumRequirements(b_fuzzy_av[[item]], attr(buyer,item))
+                    sumRequirements(b_fuzzy_av[[item]], attr(buyer, item))
                 }
               }
               #Average each preference
@@ -657,7 +720,7 @@ setMethod("updateMarketAverages",
                   s_pref_av + as.numeric(seller@Preferences)
                 for (item in names(s_fuzzy_av)) {
                   s_fuzzy_av[[item]] <-
-                    sumRequirements(s_fuzzy_av[[item]], attr(seller,item))
+                    sumRequirements(s_fuzzy_av[[item]], attr(seller, item))
                 }
               }
               #Average each preference
@@ -715,7 +778,8 @@ setMethod("executeSale",
             if (!random) {
               realtor@BuyerHouseMatch <-
                 filter(realtor@BuyerHouseMatch,
-                       Buyer != as.character(offer$Buyer))
+                       Buyer != as.character(offer$Buyer),
+                       Address != as.character(offer$Address))
             }
             
             ## Remove this seller

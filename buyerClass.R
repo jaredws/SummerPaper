@@ -112,7 +112,7 @@ setMethod("makeOffer",
             bid = min(house$Price,house$BV)
             
             
-            offer = as.data.frame(list("Time"=buyer@TimeCurrent,"Buyer"=buyer@Name,"Address" = as.character(house$Address),"Bid"=bid))
+            offer <- as.data.frame(list("Time"=buyer@TimeCurrent,"Buyer"=buyer@Name,"Address" = house$Address,"Bid"=bid))
             buyer@CurrentOffer <- offer
             return(buyer)
           })

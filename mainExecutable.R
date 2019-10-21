@@ -1,7 +1,4 @@
 ## Main System executable
-## Using random encounter matching
-
-## I still employ the realtor framework, but there is no matchMaking, only the random draw
 
 main <-
   function(ITERATIONS = 10,
@@ -21,7 +18,7 @@ main <-
     
     suppressWarnings(
       "In if (!is.na(offer)) { :
-                 the condition has length > 1 and only the first element will be used"
+      the condition has length > 1 and only the first element will be used"
     )
     ## Still some data cleaning around prices and organizing
     ## Will do that later
@@ -30,6 +27,7 @@ main <-
     ## Be sure date is in the proper format
     dataToDraw$Date <- as.Date.factor(dataToDraw$Date)
     dataToDraw$SqrFt <- as.numeric(dataToDraw$SqrFt)
+    dataToDraw$Address <- as.factor(dataToDraw$Address)
     
     
     
@@ -131,13 +129,13 @@ main <-
       ## and are thus unique, there is no need to worry about overwritting
       
       ## Generate sellers from the given data distribution
-      n <- runif(1,0,1)
+      n <- runif(1, 0, 1)
       n_Sellers <- seller_prob %>%
         dplyr::filter(High >= n) %>%
         dplyr::filter(Low <= n) %>%
         dplyr::summarise(toGen = min(ListingsToday))
       
-      n <- runif(1,0,1)
+      n <- runif(1, 0, 1)
       n_Buyers <- buyer_prob %>%
         dplyr::filter(High >= n) %>%
         dplyr::filter(Low <= n) %>%
@@ -151,7 +149,7 @@ main <-
           house_data = dataToDraw,
           clarity = Clarity,
           responsiveness = Responsiveness,
-          buyer_params =buyer_params,
+          buyer_params = buyer_params,
           fuzzy_param = fuzzy_param,
           n_Buyers = as.numeric(n_Buyers)
         )
@@ -188,7 +186,7 @@ main <-
       ##### May need to break this out again for cross-realtor matching?
       RealtorsRunning <- list()
       for (r in RealtorList_noRealtor) {
-        r@TimeCurrent = t
+        r@TimeCurrent <- t
         
         ## 2.1 Inform realtors of their new clients
         for (b in newBuyers)
@@ -210,7 +208,7 @@ main <-
         
         # 2.2 Matchmake
         if (!RANDOM) {
-          if(nrow(r@Sellers) == 0 || nrow(r@Buyers) == 0){
+          if (nrow(r@Sellers) == 0 || nrow(r@Buyers) == 0) {
             ## if there are no matches, just loop again, everyone will have their time updated when necessary
             RealtorsRunning[[r@Name]] <- r
             break
@@ -243,39 +241,45 @@ main <-
           ## There may be 'reapeat discoveries'
           ## Since some houses get updated on their price, this should be fine
           if (RANDOM) {
-            n <- 3;
-            if(r@Name == "RandomDraw5"){
-              n <- 5;
+            n <- 3
+            
+            if (r@Name == "RandomDraw5") {
+              n <- 5
+              
             }
-            n <- min(n,nrow(r@Houses))
+            n <- min(n, nrow(r@Houses))
             
             houses <- sample_n(r@Houses, n, replace = FALSE) %>%
               dplyr::select(Address,
-                     Price,
-                     Beds,
-                     Baths,
-                     SqrFt,
-                     LotSize,
-                     UpdateTime)
+                            Price,
+                            Beds,
+                            Baths,
+                            SqrFt,
+                            LotSize,
+                            UpdateTime)
           }
           
           if (r@Name == "PerfectInfo") {
-            houses <- dplyr::filter(r@BuyerHouseMatch, Buyer == b@Name) %>%
-              arrange(desc(TimeStamp), desc(Buyer_AV)) %>%
+            houses <- dplyr::filter(r@BuyerHouseMatch,
+                                    Buyer == b@Name,
+                                    Buyer_AV >= b@MinQoS) %>%
+              arrange(desc(TimeStamp), desc(Buyer_AV), Estimated_Bid) %>%
               dplyr::select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
           }
           ## Else, sort descending by Buyer Value to max profit
           if (r@Name == "MaxProfit") {
-            houses <- dplyr::filter(r@BuyerHouseMatch, 
-                             Buyer == b@Name,
-                             Buyer_AV >= b@MinQoS) %>%
-              arrange(desc(TimeStamp), desc(Buyer_Value)) %>%
+            houses <- dplyr::filter(r@BuyerHouseMatch,
+                                    Buyer == b@Name,
+                                    Buyer_AV >= b@MinQoS) %>%
+              arrange(desc(TimeStamp),
+                      desc(Buyer_Value),
+                      desc(Estimated_Bid)) %>%
               dplyr::select(Address, Price, Beds, Baths, SqrFt, LotSize, TimeStamp)
           }
           ## Only inform on the top 3
           ## Gain information every turn, even if no action is taken
           if (nrow(houses) > 3) {
-            houses <- houses[1:3,]
+            houses <- houses[1:3, ]
           }
           
           colnames(houses) <-
@@ -322,19 +326,29 @@ main <-
         ## 3.1 Sellers hear about new offers
         ## 3.2 Sellers either raise the price, accept an offer, or decline all offers
         SellersRunning <- list()
+        
+        ## To Improve efficiency, I create a list of "houses to remove"
+        ## If a house increases in price, we remove it from the buyer's list and he
+        ## will receive it again in the next matching loop, or not at all.
+        ## If the house has Update == PriceIncrease, then the buyer has the opportunity to bid again
+        ## next iteration
+        housesToUpdate <- as.data.frame(matrix(nrow = 0, ncol = 2))
+        colnames(housesToUpdate) <- c("Address", "Update")
+        
         for (s in SellerList_noRealtor) {
           s@TimeCurrent = t
           if (r@Name == s@Realtor) {
             if (nrow(r@NewOffers) == 0) {
-              ## If there are no offers this round, we 'should' update every Seller's current time
+              ## If there are no offers this round
               SellersRunning[[s@Name]] <- s
               next
             }
             s <-
-              informSeller(s, dplyr::filter(
-                r@NewOffers,
-                as.character(s@House$Address) == Address
-              ))
+              informSeller(s,
+                           dplyr::filter(
+                             r@NewOffers,
+                             as.character(s@House$Address) == Address
+                           ))
             if (nrow(s@CurrentOffers) == 0) {
               SellersRunning[[s@Name]] <- s
               next
@@ -344,29 +358,51 @@ main <-
                 !is.na(s@AcceptedOffer)) {
               ## If there are multiple offers for the same price on the same house,
               ## we must increase the price and reinform the realtor
-              if (s@AcceptedOffer[1] == "Price Increase") {
+              if (nrow(s@AcceptedOffer) > 1) {
                 ## Need to add these houses to another dataset and the realtor must be notified to update the buyers
-                ## Could re-use the code for removing houes from buyers
+                ## Re-use the code for removing houes from buyers
                 ## and simply re-match on the next iteration
+                
+                ## If AcceptedOffer has more than 1 row, it means that the seller has not accepted an offer,
+                ## but has raised the price due to a bidding war
+                
+                
+                ## Go through the seller's currenet list of offers and update the buyers
+                ## Who are currently competing for buying the house. 
+                ## They will be able to bid again next turn, but must get re-matched by the realtor
+                ## Simply adjusting the price would require the buyer to re-compute his AV and Buyer Value
+                for(i in 1:nrow(s@AcceptedOffer)){
+                  buyerName <- as.character(s@AcceptedOffer[i,"Buyer"])
+                  buyer <- BuyerList_noRealtor[[buyerName]]
+                  buyer@HousesKnown <- filter(buyer@HousesKnown, Address != as.character(s@House$Address))
+                  buyer@PlayLag <- t + 1
+                  BuyerList_noRealtor[[buyerName]] <- buyer
+                }
+                
+                ## Add the Address to the housesToUpdate df
+                ## Even if a buyer did not bid on the house, his knowledge of the houses on the market must 
+                ## adjust.
+                htu <-
+                  as.data.frame(list(
+                    "Address" = s@House$Address,
+                    "Update" = "PriceIncrease"
+                  ))
+                housesToUpdate <- rbind(housesToUpdate, htu)
+                housesToUpdate$Address <-
+                  as.factor(housesToUpdate$Address)
                 
                 inform <- informRealtor(s)
                 r <- informRealtorFromSeller(r, s, inform)
+                r@BuyerHouseMatch <-
+                  filter(r@BuyerHouseMatch, Address != as.character(s@House$Address))
+                
                 SellersRunning[[s@Name]] <- s
                 priceIncreases <- priceIncreases + 1
                 
-                ## Go through each Buyer's dataset and drop houses that are at a higher price
-                buyerNotify <- r@BuyerHouseMatch %>%
-                  dplyr::filter(Address == as.character(s@House$Address))
-                buyerNotify <- as.list(buyerNotify$Buyer)
-                for (b in buyerNotify) {
-                  b <- as.character(b)
-                  BuyerList_noRealtor[[b]] <-
-                    removeHouse(BuyerList_noRealtor[[b]],
-                                as.character(s@House$Address))
-                }
-                
                 next
               }
+              ## If the seller has accepted less than 1 but more than none offers, we have a sale!
+              
               
               ## Since buyers can only commit to one offer,
               ## There can be no overlap in these statements
@@ -420,6 +456,16 @@ main <-
               house_sales_noRealtor <-
                 rbind(house_sales_noRealtor, house_entry)
               
+              ## Add the Address to the housesToUpdate df
+              htu <-
+                as.data.frame(list(
+                  "Address" = s@House$Address,
+                  "Update" = "Sold"
+                ))
+              housesToUpdate <- rbind(housesToUpdate, htu)
+              housesToUpdate$Address <-
+                as.factor(housesToUpdate$Address)
+              
               ## Before executing the sale, update Market averages
               #r <- updateMarketAverages(r)
               ## Not learning so no need to update market averages
@@ -453,30 +499,43 @@ main <-
                   replace@Name
                 BuyerList_noRealtor[replace@Name] <- replace
               }
-              
-              
-              ## Go through each Buyer's dataset and drop houses that are no longer on the market
-              buyerNotify <- r@BuyerHouseMatch %>%
-                dplyr::filter(Address == as.character(s@House$Address))
-              buyerNotify <- as.list(buyerNotify$Buyer)
-              for (b in buyerNotify) {
-                b <- as.character(b)
-                BuyerList_noRealtor[[b]] <-
-                  removeHouse(BuyerList_noRealtor[[b]],
-                              as.character(s@House$Address))
-              }
               ## Call the next Seller, so we do not append this seller to SellersRunning
               ## and it is removed from Seller List
-              next
             }
           }
           SellersRunning[[s@Name]] <- s
         }
         
+        
         SellerList_noRealtor <- SellersRunning
         ##print(BuyerList_noRealtor)
         
         
+        
+        ## Go through each Buyer's dataset and drop houses that are no longer on the market
+        ## or have increased in price
+        if (nrow(housesToUpdate) > 0) {
+          BuyersRunning <- list()
+          for (b in BuyerList_noRealtor) {
+            if (b@Realtor != r@Name) {
+              BuyersRunning[[b@Name]] <- b
+              next
+            }
+            ## else
+
+            ## Remove all houses sold and increased in price from his data set
+            ## If the price is still feasible for him, he will be re-informed by the realtor
+            ## on the next matchMake loop
+            b@HousesKnown$Address <- as.factor(b@HousesKnown$Address)
+            b@HousesKnown <-
+              anti_join(b@HousesKnown, housesToUpdate, by = c("Address"))
+            
+            BuyersRunning[[b@Name]] <- b
+          }
+          BuyerList_noRealtor <- BuyersRunning
+        }
+        ## Clear the NewOffers List
+        r@NewOffers <- as.data.frame(matrix(ncol = 4, nrow = 0))
         RealtorsRunning[[r@Name]] <- r
         
       }

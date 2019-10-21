@@ -1,0 +1,48 @@
+## Model now:
+
+Initialize
+  for all Realtors:
+    addClients(realtor,generateNewBuyers&Sellers())
+    matches <- matchMake(realtor)
+    for all Buyers of realtor:
+      newOffers <- makeOffer(time,buyer, matches)
+    for all Sellers of realtor:
+      acceptedOffers <- acceptOffer(time, newOffers)
+      notifyBuyers(time, acceptedOffers)
+  LOOP
+  
+## Model Potentially:
+Initialize
+  for all Realtors realtor:
+    addClients(realtor,generateNewBuyers&Sellers())
+    matches <- matchMake(realtor)
+  for all Buyers buyer:
+    newOffers <- makeOffer(time,buyer, matches)
+  for all Sellers seller:
+    acceptedOffers <- acceptOffer(time, newOffers)
+    adjustListings(time, acceptedOffers)
+  LOOP 
+  
+  
+## Model Potentially with details:
+Initialize
+  for all Realtors:
+    addClients(realtor,generateNewBuyers&Sellers())
+    matches <- matchMake(realtor)
+              If RANDOM
+                  matches <- randomSample(houses,n)
+              else
+                for all Buyers:
+                  for all Houses:
+                    AV <- compareAttributes(buyer,house)_
+                    if AV >= minQoS(buyer, house)
+                      match <- match + house
+                
+  for all Buyers:
+    newOffers <- makeOffer(time,buyer, matches)
+  for all Sellers:
+    acceptedOffers <- acceptOffer(time, newOffers)
+    adjustListings(time, acceptedOffers)
+      ## Remove Buyers and Sellers who settled
+      ## Adjust house prices
+  LOOP 

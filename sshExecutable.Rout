@@ -1,0 +1,163 @@
+
+R version 3.5.0 (2018-04-23) -- "Joy in Playing"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ### SSH script for running the main function
+> ### executibles on the hoec server
+> 
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(FuzzyNumbers)
+Warning message:
+package ‘FuzzyNumbers’ was built under R version 3.5.2 
+> #library(tidyverse)
+> 
+> source("requirementClass.R")
+> source("buyerClass.R")
+> source("realtorClass.R")
+in method for ‘informRealtorFromSeller’ with signature ‘"Realtor","Seller","list"’: no definition for class “Seller”
+> source("sellerClass.R")
+> source("generateBuyersAndSellers.R")
+> source("mainExecutable.R")
+> 
+> seedList <- read.csv("seedList.csv", col.names = c("Run", "Seed"))
+> 
+> runNames <- c("NoRealtor", "PerfectInfo")
+> randomness <- list("NoRealtor" = TRUE, "PerfectInfo" = FALSE)
+> lagPlay <- c(TRUE, FALSE)
+> iterations <- 5
+> 
+> realizedData <- list()
+> 
+> for (lag in lagPlay) {
++   for (version in runNames) {
++     for (run in 1:2) {
++       run <- as.numeric(run)
++       ## Name the index in the list as the type of run
++       ## Example:
++       ## NoRealtor_TRUE_1
++       ## Would be the first run of the NoRealtor version, with lagPlay active
++       
++       executing <- paste0(version, "_", lag, "_", run)
++       print(paste0("Now running: ",executing))
++       
++       ## This is going to get large ... very fast
++       ## I may want to write to disk more often, but we will see...
++       realizedData[[executing]] <-
++         main(ITERATIONS = iterations,
++              SEED = seedList[run, "Seed"],
++              RANDOM = randomness[[version]], ## Randomness depends on the version.
++              LAGPLAY = lag,
++              RUN_NAME = version)
++     }
++   }
++ }
+[1] "Now running: NoRealtor_TRUE_1"
+[1] "Start time: 2019-07-23 15:01:41"
+[1] "Complete: 20% 2019-07-23 15:01:43"
+[1] "Complete: 40% 2019-07-23 15:01:44"
+[1] "Complete: 60% 2019-07-23 15:01:46"
+[1] "Complete: 80% 2019-07-23 15:01:48"
+[1] "Complete: 100% 2019-07-23 15:01:50"
+[1] "Run-time: 9.15383100509644"
+[1] "Now running: NoRealtor_TRUE_2"
+[1] "Start time: 2019-07-23 15:01:50"
+[1] "Complete: 20% 2019-07-23 15:01:51"
+[1] "Complete: 40% 2019-07-23 15:01:52"
+[1] "Complete: 60% 2019-07-23 15:01:53"
+[1] "Complete: 80% 2019-07-23 15:01:54"
+[1] "Complete: 100% 2019-07-23 15:01:56"
+[1] "Run-time: 6.03376483917236"
+[1] "Now running: PerfectInfo_TRUE_1"
+[1] "Start time: 2019-07-23 15:01:56"
+[1] "Complete: 20% 2019-07-23 15:02:00"
+[1] "Complete: 40% 2019-07-23 15:02:10"
+[1] "Complete: 60% 2019-07-23 15:02:27"
+[1] "Complete: 80% 2019-07-23 15:02:53"
+[1] "Complete: 100% 2019-07-23 15:03:26"
+[1] "Run-time: 1.49414593378703"
+[1] "Now running: PerfectInfo_TRUE_2"
+[1] "Start time: 2019-07-23 15:03:26"
+[1] "Complete: 20% 2019-07-23 15:03:28"
+[1] "Complete: 40% 2019-07-23 15:03:33"
+[1] "Complete: 60% 2019-07-23 15:03:42"
+[1] "Complete: 80% 2019-07-23 15:03:54"
+[1] "Complete: 100% 2019-07-23 15:04:13"
+[1] "Run-time: 46.6969220638275"
+[1] "Now running: NoRealtor_FALSE_1"
+[1] "Start time: 2019-07-23 15:04:13"
+[1] "Complete: 20% 2019-07-23 15:04:14"
+[1] "Complete: 40% 2019-07-23 15:04:15"
+[1] "Complete: 60% 2019-07-23 15:04:17"
+[1] "Complete: 80% 2019-07-23 15:04:20"
+[1] "Complete: 100% 2019-07-23 15:04:22"
+[1] "Run-time: 9.38278603553772"
+[1] "Now running: NoRealtor_FALSE_2"
+[1] "Start time: 2019-07-23 15:04:22"
+[1] "Complete: 20% 2019-07-23 15:04:23"
+[1] "Complete: 40% 2019-07-23 15:04:24"
+[1] "Complete: 60% 2019-07-23 15:04:25"
+[1] "Complete: 80% 2019-07-23 15:04:27"
+[1] "Complete: 100% 2019-07-23 15:04:29"
+[1] "Run-time: 6.58036708831787"
+[1] "Now running: PerfectInfo_FALSE_1"
+[1] "Start time: 2019-07-23 15:04:29"
+[1] "Complete: 20% 2019-07-23 15:04:32"
+[1] "Complete: 40% 2019-07-23 15:04:42"
+[1] "Complete: 60% 2019-07-23 15:04:56"
+[1] "Complete: 80% 2019-07-23 15:05:16"
+[1] "Complete: 100% 2019-07-23 15:05:43"
+[1] "Run-time: 1.24131215016047"
+[1] "Now running: PerfectInfo_FALSE_2"
+[1] "Start time: 2019-07-23 15:05:43"
+[1] "Complete: 20% 2019-07-23 15:05:48"
+[1] "Complete: 40% 2019-07-23 15:05:53"
+[1] "Complete: 60% 2019-07-23 15:06:03"
+[1] "Complete: 80% 2019-07-23 15:06:19"
+[1] "Complete: 100% 2019-07-23 15:06:38"
+[1] "Run-time: 54.6790618896484"
+There were 50 or more warnings (use warnings() to see the first 50)
+> 
+> save(realizedData, file = "realizedData.RData")
+> 
+> ## Note: each execution of the system returns a list of the form:
+> # RETURN <- list(
+> #   "BuyerList" <- BuyerList_noRealtor,
+> #   "SellerList" <- SellerList_noRealtor,
+> #   "RealtorList" <- RealtorList_noRealtor,
+> #   "Iteration_stats" <- iteration_stats_noRealtor,
+> #   "House_sale_stats" <- house_sales_noRealtor,
+> #   "BuyerInactive" <- BuyerInactive_noRealtor,
+> #   "SellerInactive" <- SellerInactive_noRealtor
+> # )
+> 
+> #load(file = "realizedData.RData")
+> 
+> proc.time()
+   user  system elapsed 
+286.079   2.249 297.875 
